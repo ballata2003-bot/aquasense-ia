@@ -1,0 +1,2271 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 24 24%27%3E%3Ctext y=%2720%27 font-size=%2720%27%3E💧%3C/text%3E%3C/svg%3E">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AquaSense — Prototipo de Detección de Fugas</title>
+<style>
+  :root{
+    --bg:#050608;
+    --panel:#0C0E13;
+    --panel-alt:#14171D;
+    --border:#262932;
+    --text:#F5F6F8;
+    --muted:#888B92;
+    --muted-dim:#5B5E66;
+    --teal:#0066FF;
+    --teal-dim:#123B7A;
+    --coral:#E2725B;
+    --coral-dim:#7A3A2F;
+    --gold:#E8B75D;
+    --radius:10px;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ height:100%; }
+  body{
+    margin:0;
+    font-family: -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif;
+    background:var(--bg);
+    color:var(--text);
+    font-variant-numeric: tabular-nums;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{
+    display:grid;
+    grid-template-columns: 240px 1fr;
+    min-height:100vh;
+  }
+
+  /* ---------- Sidebar ---------- */
+  .sidebar{
+    background:#0E2429;
+    border-right:1px solid var(--border);
+    padding:28px 18px;
+    display:flex;
+    flex-direction:column;
+    justify-content:space-between;
+  }
+  .brand{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:0 6px 26px 6px;
+  }
+  .brand-mark{
+    width:34px; height:34px; border-radius:9px;
+    background:linear-gradient(155deg, var(--teal), #1c7f78);
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .brand-mark svg{ width:19px; height:19px; }
+  .brand-name{ font-size:16.5px; font-weight:700; letter-spacing:0.2px; }
+  .brand-sub{ font-size:11px; color:var(--muted); margin-top:1px; }
+
+  nav.primary-nav{ display:flex; flex-direction:column; gap:3px; }
+  .nav-item{
+    display:flex; align-items:center; gap:11px;
+    padding:10px 12px; border-radius:8px;
+    color:var(--muted); cursor:pointer;
+    font-size:14px; font-weight:500;
+    border:1px solid transparent;
+    user-select:none;
+    transition:background .15s ease, color .15s ease;
+  }
+  .nav-item svg{ width:17px; height:17px; flex-shrink:0; }
+  .nav-item:hover{ background:rgba(255,255,255,0.03); color:var(--text); }
+  .nav-item.active{
+    background:rgba(0,102,255,0.12);
+    color:var(--text);
+    border-color:rgba(0,102,255,0.35);
+  }
+  .nav-item.active svg{ color:var(--teal); }
+
+  .sidebar-foot{
+    font-size:11.5px; color:var(--muted-dim); line-height:1.5;
+    border-top:1px solid var(--border); padding-top:14px;
+  }
+  .sidebar-foot b{ color:var(--muted); }
+
+  /* ---------- Main ---------- */
+  main{ padding:26px 34px 40px 34px; max-width:1180px; }
+  .topbar{
+    display:flex; align-items:baseline; justify-content:space-between;
+    margin-bottom:22px; flex-wrap:wrap; gap:8px;
+  }
+  .topbar h1{ font-size:23px; margin:0; font-weight:700; }
+  .topbar .clock{ font-size:13px; color:var(--muted); }
+
+  .view{ display:none; }
+  .view.active{ display:block; }
+
+  /* Stat cards */
+  .stat-row{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:14px;
+    margin-bottom:22px;
+  }
+  .stat-card{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:18px 20px;
+  }
+  .stat-label{ font-size:12.5px; color:var(--muted); margin-bottom:10px; }
+  .stat-value{ font-size:29px; font-weight:700; line-height:1; }
+  .stat-value.teal{ color:var(--teal); }
+  .stat-value.coral{ color:var(--coral); }
+  .stat-value.gold{ color:var(--gold); }
+  .stat-delta{ font-size:12px; color:var(--muted-dim); margin-top:8px; }
+
+  /* Panel */
+  .panel{
+    background:var(--panel);
+    border:1px solid var(--border);
+    border-radius:var(--radius);
+    padding:20px 22px;
+    margin-bottom:20px;
+  }
+  .panel-head{
+    display:flex; align-items:center; justify-content:space-between;
+    margin-bottom:14px; flex-wrap:wrap; gap:10px;
+  }
+  .panel-head h2{ font-size:16px; margin:0; font-weight:600; }
+  .panel-head p.hint{ font-size:12.5px; color:var(--muted); margin:3px 0 0 0; }
+
+  canvas#flowChart{ width:100%; height:220px; display:block; }
+
+  .btn{
+    border:none; border-radius:8px; padding:9px 16px;
+    font-size:13.5px; font-weight:600; cursor:pointer;
+    transition:filter .15s ease, transform .05s ease;
+  }
+  .btn:active{ transform:scale(0.98); }
+  .btn-primary{ background:var(--teal); color:#062522; }
+  .btn-primary:hover{ filter:brightness(1.08); }
+  .btn-alert{ background:var(--coral); color:#2b110b; }
+  .btn-alert:hover{ filter:brightness(1.08); }
+  .btn-ghost{
+    background:transparent; color:var(--muted); border:1px solid var(--border);
+  }
+  .btn-ghost:hover{ color:var(--text); border-color:var(--muted-dim); }
+
+  /* Sensor grid */
+  .sensor-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+  .sensor-card{
+    background:var(--panel-alt);
+    border:1px solid var(--border);
+    border-radius:9px; padding:16px 18px;
+  }
+  .sensor-top{ display:flex; align-items:center; justify-content:space-between; }
+  .sensor-name{ font-weight:600; font-size:14.5px; }
+  .status-dot{
+    width:9px; height:9px; border-radius:50%; display:inline-block; margin-right:6px;
+    background:var(--teal); box-shadow:0 0 0 3px rgba(0,102,255,0.18);
+  }
+  .status-dot.alert{ background:var(--coral); box-shadow:0 0 0 3px rgba(226,114,91,0.22); }
+  .status-dot.off{ background:var(--muted-dim); box-shadow:none; }
+  .sensor-status-text{ font-size:12px; color:var(--muted); }
+  .sensor-reading{ font-size:22px; font-weight:700; margin-top:10px; }
+  .sensor-reading span{ font-size:12.5px; font-weight:400; color:var(--muted); }
+  .sensor-actions{ margin-top:12px; display:flex; gap:8px; }
+  .sensor-actions .btn{ padding:6px 11px; font-size:12px; }
+
+  /* Alerts */
+  .alert-item{
+    display:flex; align-items:flex-start; gap:12px;
+    padding:14px 0; border-bottom:1px solid var(--border);
+  }
+  .alert-item:last-child{ border-bottom:none; }
+  .alert-icon{
+    width:34px; height:34px; border-radius:9px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    background:rgba(226,114,91,0.14);
+  }
+  .alert-icon svg{ width:17px; height:17px; color:var(--coral); }
+  .alert-icon.resolved{ background:rgba(0,102,255,0.14); }
+  .alert-icon.resolved svg{ color:var(--teal); }
+  .alert-body{ flex:1; }
+  .alert-title{ font-size:14px; font-weight:600; }
+  .alert-meta{ font-size:12px; color:var(--muted); margin-top:2px; }
+  .alert-conf{ font-size:12px; color:var(--gold); margin-top:4px; }
+  .alert-actions{ display:flex; align-items:center; }
+  .empty-state{
+    text-align:center; padding:34px 10px; color:var(--muted);
+    font-size:13.5px;
+  }
+  .empty-state svg{ width:30px; height:30px; margin-bottom:10px; color:var(--muted-dim); }
+
+  /* Config */
+  .config-row{
+    display:flex; align-items:flex-start; justify-content:space-between;
+    padding:16px 0; border-bottom:1px solid var(--border); gap:24px;
+  }
+  .config-row:last-of-type{ border-bottom:none; }
+  .config-label{ font-size:14px; font-weight:600; }
+  .config-desc{ font-size:12.5px; color:var(--muted); margin-top:4px; max-width:420px; }
+  .config-control{ flex-shrink:0; min-width:220px; text-align:right; }
+
+  input[type="range"]{
+    width:200px; accent-color:var(--teal); cursor:pointer;
+  }
+  .range-value{ font-size:13px; color:var(--teal); font-weight:700; margin-left:8px; }
+
+  .switch{ position:relative; display:inline-block; width:42px; height:24px; }
+  .switch input{ opacity:0; width:0; height:0; }
+  .slider-toggle{
+    position:absolute; cursor:pointer; inset:0;
+    background:var(--border); border-radius:24px; transition:.15s;
+  }
+  .slider-toggle:before{
+    content:""; position:absolute; height:18px; width:18px; left:3px; top:3px;
+    background:var(--muted); border-radius:50%; transition:.15s;
+  }
+  input:checked + .slider-toggle{ background:rgba(0,102,255,0.35); }
+  input:checked + .slider-toggle:before{ transform:translateX(18px); background:var(--teal); }
+
+  /* Asistente / chat */
+  .chat-panel{ display:flex; flex-direction:column; height:560px; padding:0; overflow:hidden; }
+  .chat-head{ padding:18px 22px; border-bottom:1px solid var(--border); }
+  .chat-head h2{ margin:0 0 4px 0; font-size:16px; font-weight:600; }
+  .chat-head p{ margin:0; font-size:12.5px; color:var(--muted); }
+  .chat-body{ flex:1; overflow-y:auto; padding:18px 22px; display:flex; flex-direction:column; gap:14px; }
+  .msg{ max-width:78%; padding:11px 15px; border-radius:12px; font-size:13.5px; line-height:1.5; white-space:pre-line; }
+  .msg-bot{ align-self:flex-start; background:var(--panel-alt); border:1px solid var(--border); border-bottom-left-radius:3px; }
+  .msg-user{ align-self:flex-end; background:var(--teal-dim); color:#F5F6F8; border-bottom-right-radius:3px; }
+  .msg-agent-tag{ display:block; font-size:10.5px; font-weight:700; letter-spacing:.3px; text-transform:uppercase; color:var(--teal); margin-bottom:4px; }
+  .quick-row{ display:flex; flex-wrap:wrap; gap:8px; padding:0 22px 16px 22px; }
+  .quick-btn{
+    background:transparent; border:1px solid var(--border); color:var(--muted);
+    border-radius:20px; padding:7px 13px; font-size:12.5px; cursor:pointer;
+    transition:border-color .15s ease, color .15s ease;
+  }
+  .quick-btn:hover{ border-color:var(--teal); color:var(--text); }
+  .chat-input-row{ display:flex; gap:10px; padding:16px 22px; border-top:1px solid var(--border); }
+  .chat-input-row input{
+    flex:1; background:var(--panel-alt); border:1px solid var(--border); color:var(--text);
+    border-radius:8px; padding:11px 14px; font-size:13.5px; outline:none;
+  }
+  .chat-input-row input:focus{ border-color:var(--teal-dim); }
+
+  /* Agentes (jerarquía) */
+  .agent-tier{ display:flex; justify-content:center; gap:16px; margin-bottom:16px; }
+  .agent-tier.single{ max-width:420px; margin-left:auto; margin-right:auto; }
+  .agent-card{
+    background:var(--panel-alt); border:1px solid var(--border); border-radius:12px;
+    padding:16px 18px; flex:1; min-width:0; position:relative;
+  }
+  .agent-card.coordinador{ border-color:rgba(226,114,91,0.4); }
+  .agent-card.ejecutor{ border-color:rgba(232,183,93,0.4); }
+  .agent-icon{ font-size:20px; margin-right:8px; }
+  .agent-name{ font-size:14px; font-weight:700; display:flex; align-items:center; gap:6px; }
+  .agent-role{ font-size:11.5px; color:var(--muted); margin:3px 0 10px 0; }
+  .agent-status{ font-size:12.5px; line-height:1.5; padding:9px 11px; background:rgba(255,255,255,0.03); border-radius:8px; border:1px solid var(--border); }
+  .agent-status.busy{ color:var(--coral); border-color:rgba(226,114,91,0.3); }
+  .agent-status.ok{ color:var(--teal); border-color:rgba(0,102,255,0.3); }
+  .agent-connector{ display:flex; justify-content:center; margin:-4px 0 -4px 0; }
+  .agent-connector svg{ width:22px; height:22px; color:var(--muted); opacity:0.5; }
+  .agent-tools{ margin-top:9px; padding-top:9px; border-top:1px dashed var(--border); }
+  .agent-tools code{
+    display:block; font-family:'SF Mono',Consolas,monospace; font-size:10.5px; color:var(--teal);
+    margin-bottom:3px;
+  }
+  .agent-tools .tool-desc{ color:var(--muted); font-size:10px; margin:0 0 6px 0; }
+
+  /* Registro de actividad */
+  .activity-log{ margin-top:18px; }
+  .activity-item{
+    display:flex; gap:10px; padding:9px 0; border-bottom:1px solid var(--border); font-size:12px;
+  }
+  .activity-item:last-child{ border-bottom:none; }
+  .activity-avatar{
+    width:24px; height:24px; border-radius:6px; flex-shrink:0;
+    display:flex; align-items:center; justify-content:center;
+    font-size:11px; font-weight:700; color:#0e1a1d;
+  }
+  .activity-time{ color:var(--muted); font-size:10.5px; min-width:44px; }
+  .activity-text b{ color:var(--text); }
+  .activity-text{ color:var(--muted); }
+
+  /* Analítica */
+  .analytics-grid{ display:grid; grid-template-columns:1.1fr 1fr; gap:16px; }
+  @media (max-width:900px){ .analytics-grid{ grid-template-columns:1fr; } }
+  canvas#barChart, canvas#corrChart{ width:100%; height:200px; display:block; cursor:pointer; }
+  .bar-hint{ font-size:11px; color:var(--muted); margin-top:6px; }
+  .sensor-detail-box{
+    margin-top:14px; padding:12px 14px; background:var(--panel-alt); border:1px solid var(--border);
+    border-radius:10px; font-size:12.5px; display:none;
+  }
+  .sensor-detail-box.show{ display:block; }
+  .predict-card{
+    background:var(--panel-alt); border:1px solid var(--border); border-radius:12px; padding:16px 18px; margin-top:16px;
+  }
+  .predict-value{ font-size:26px; font-weight:700; color:var(--teal); }
+  .predict-conf{ font-size:11.5px; color:var(--muted); margin-top:4px; }
+
+  /* Acciones pendientes */
+  .stat-row-sm{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:18px; }
+  .stat-box{ background:var(--panel-alt); border:1px solid var(--border); border-radius:10px; padding:12px 14px; }
+  .stat-box .label{ font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.3px; }
+  .stat-box .value{ font-size:20px; font-weight:700; margin-top:4px; }
+  .action-card{
+    background:var(--panel-alt); border:1px solid var(--border); border-radius:12px; padding:16px 18px; margin-bottom:12px;
+  }
+  .action-card.done{ opacity:0.55; }
+  .action-top{ display:flex; justify-content:space-between; align-items:flex-start; gap:10px; }
+  .action-title{ font-size:14.5px; font-weight:700; }
+  .badge{ display:inline-block; font-size:10px; font-weight:700; padding:2px 8px; border-radius:20px; margin-left:8px; }
+  .badge.alta{ background:rgba(226,114,91,0.18); color:var(--coral); }
+  .badge.media{ background:rgba(232,183,93,0.18); color:var(--gold); }
+  .badge.baja{ background:rgba(0,102,255,0.18); color:var(--teal); }
+  .badge.status{ background:rgba(255,255,255,0.08); color:var(--muted); }
+  .action-detail{ font-size:12px; color:var(--muted); margin:8px 0 12px 0; }
+  .action-actions{ display:flex; gap:8px; flex-wrap:wrap; }
+  .action-actions .btn{ font-size:12px; padding:7px 12px; }
+
+  /* Predicción page */
+  .horizon-tabs{ display:flex; gap:8px; margin-bottom:14px; }
+  .horizon-tabs button{
+    background:var(--panel-alt); border:1px solid var(--border); color:var(--muted);
+    border-radius:8px; padding:6px 14px; font-size:12.5px; cursor:pointer;
+  }
+  .horizon-tabs button.active{ background:rgba(0,102,255,0.15); border-color:var(--teal); color:var(--teal); }
+  table.data-table{ width:100%; border-collapse:collapse; font-size:12.5px; }
+  table.data-table th{ text-align:left; color:var(--muted); font-weight:600; font-size:10.5px; text-transform:uppercase; padding:8px 10px; border-bottom:1px solid var(--border); }
+  table.data-table td{ padding:9px 10px; border-bottom:1px solid var(--border); }
+  table.data-table tr:last-child td{ border-bottom:none; }
+
+  /* Simulador */
+  .sim-bars{ display:flex; align-items:flex-end; gap:3px; height:120px; margin:16px 0; }
+  .sim-bar{ flex:1; border-radius:3px 3px 0 0; min-height:3px; }
+
+  /* Historial filtros */
+  .filter-row{ display:flex; gap:10px; margin-bottom:14px; flex-wrap:wrap; }
+  .filter-row select{
+    background:var(--panel-alt); border:1px solid var(--border); color:var(--text);
+    border-radius:8px; padding:8px 12px; font-size:12.5px;
+  }
+
+  /* Reportes */
+  .report-grid{ display:grid; grid-template-columns:repeat(2,1fr); gap:14px; margin-bottom:18px; }
+  @media (max-width:900px){ .report-grid{ grid-template-columns:1fr; } }
+  .report-card{ background:var(--panel-alt); border:1px solid var(--border); border-radius:12px; padding:18px 20px; }
+  .report-card .value{ font-size:26px; font-weight:700; color:var(--teal); }
+  .report-card .label{ font-size:11.5px; color:var(--muted); margin-top:4px; }
+
+  /* WhatsApp skin */
+  .channel-tabs{ display:flex; gap:6px; padding:14px 22px 0 22px; }
+  .channel-tabs button{
+    background:transparent; border:1px solid var(--border); color:var(--muted);
+    border-radius:8px 8px 0 0; padding:6px 16px; font-size:12.5px; cursor:pointer; border-bottom:none;
+  }
+  .channel-tabs button.active{ background:var(--panel-alt); color:var(--text); border-color:var(--border); }
+  .wa-wrap{ background:#0b1a12; }
+  .wa-wrap .chat-body{ background:#0b1a12; }
+  .msg-bot.wa{ background:#1f2c25; }
+  .msg-user.wa{ background:#075E54; color:#fff; }
+  .wa-note{ font-size:11px; color:var(--muted); padding:8px 22px; font-style:italic; }
+
+  /* Panel Admin */
+  .admin-row{ display:grid; grid-template-columns:1.4fr 0.9fr 0.9fr 0.9fr 0.7fr; gap:10px; align-items:center; padding:9px 0; border-bottom:1px solid var(--border); }
+  .admin-row.head{ font-size:10.5px; color:var(--muted); text-transform:uppercase; letter-spacing:.3px; }
+  .admin-row input{
+    background:var(--panel-alt); border:1px solid var(--border); color:var(--text);
+    border-radius:6px; padding:6px 8px; font-size:12.5px; width:100%;
+  }
+  .admin-add-row{ display:grid; grid-template-columns:1.4fr 0.9fr 0.9fr 0.9fr 0.7fr; gap:10px; margin-top:14px; align-items:center; }
+
+  .toast{
+    position:fixed; bottom:26px; right:26px;
+    background:var(--panel-alt); border:1px solid var(--teal-dim);
+    color:var(--text); padding:12px 18px; border-radius:9px;
+    font-size:13.5px; box-shadow:0 8px 24px rgba(0,0,0,0.35);
+    display:flex; align-items:center; gap:10px;
+    transform:translateY(12px); opacity:0; pointer-events:none;
+    transition:transform .2s ease, opacity .2s ease;
+    z-index:50;
+  }
+  .toast.show{ transform:translateY(0); opacity:1; }
+  .toast svg{ width:16px; height:16px; color:var(--teal); flex-shrink:0; }
+
+  ::selection{ background:rgba(0,102,255,0.35); }
+  #printArea{ display:none; }
+
+  @media print{
+    body *{ visibility:hidden; }
+    #printArea, #printArea *{ visibility:visible; }
+    #printArea{
+      display:block; position:absolute; top:0; left:0; width:100%;
+      background:#fff; color:#1a1a1a; font-family:Inter, Arial, sans-serif; padding:24px;
+    }
+    .pr-header{ display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid #0F7A8C; padding-bottom:12px; margin-bottom:18px; }
+    .pr-header h1{ font-size:20px; margin:0; color:#0F7A8C; }
+    .pr-header p{ font-size:11px; color:#555; margin:2px 0 0 0; }
+    .pr-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:12px; margin-bottom:20px; }
+    .pr-card{ border:1px solid #ccc; border-radius:6px; padding:10px 12px; }
+    .pr-card .v{ font-size:18px; font-weight:700; color:#0F7A8C; }
+    .pr-card .l{ font-size:10px; color:#555; margin-top:2px; }
+    .pr-section-title{ font-size:13px; font-weight:700; margin:18px 0 8px 0; color:#14405C; }
+    .pr-table{ width:100%; border-collapse:collapse; font-size:10.5px; }
+    .pr-table th{ text-align:left; background:#f0f4f5; padding:6px 8px; border:1px solid #ddd; }
+    .pr-table td{ padding:5px 8px; border:1px solid #ddd; }
+    .pr-footer{ margin-top:22px; font-size:9.5px; color:#888; font-style:italic; }
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div>
+      <div class="brand">
+        <div class="brand-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#062522" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3c3.6 4.2 6 7.6 6 10.5A6 6 0 1 1 6 13.5C6 10.6 8.4 7.2 12 3Z"/>
+          </svg>
+        </div>
+        <div>
+          <div class="brand-name">AquaSense</div>
+          <div class="brand-sub">IoT + ML · prototipo</div>
+        </div>
+      </div>
+
+      <nav class="primary-nav">
+        <div class="nav-item active" data-view="dashboard">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="8" height="8" rx="1.5"/><rect x="13" y="3" width="8" height="5" rx="1.5"/><rect x="13" y="11" width="8" height="10" rx="1.5"/><rect x="3" y="13" width="8" height="8" rx="1.5"/></svg>
+          Panel general
+        </div>
+        <div class="nav-item" data-view="sensores">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M4.9 4.9l2.1 2.1M19.1 4.9l-2.1 2.1M4.9 19.1l2.1-2.1M19.1 19.1l-2.1-2.1"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/></svg>
+          Sensores
+        </div>
+        <div class="nav-item" data-view="alertas">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3Z"/><path d="M12 9v5"/><circle cx="12" cy="17" r="0.6" fill="currentColor" stroke="none"/></svg>
+          Alertas
+          <span id="navAlertBadge" style="display:none; margin-left:auto; background:var(--coral); color:#2b110b; font-size:10.5px; font-weight:700; border-radius:20px; padding:1px 7px;">0</span>
+        </div>
+        <div class="nav-item" data-view="acciones">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Acciones pendientes
+          <span id="navActionsBadge" style="display:none; margin-left:auto; background:var(--gold); color:#2b1f06; font-size:10.5px; font-weight:700; border-radius:20px; padding:1px 7px;">0</span>
+        </div>
+        <div class="nav-item" data-view="agentes">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="5" r="2.2"/><circle cx="5" cy="19" r="2.2"/><circle cx="19" cy="19" r="2.2"/><path d="M12 7.2V12M12 12 6.3 17.2M12 12l5.7 5.2"/></svg>
+          Agentes
+        </div>
+        <div class="nav-item" data-view="analitica">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg>
+          Analítica
+        </div>
+        <div class="nav-item" data-view="prediccion">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 8-9"/><path d="M15 6h5v5"/></svg>
+          Predicción
+        </div>
+        <div class="nav-item" data-view="simulador">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V10M10 21V4M16 21v-7M22 21v-3"/></svg>
+          Simulador
+        </div>
+        <div class="nav-item" data-view="historial">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v5h5"/><path d="M3.05 13A9 9 0 1 0 6 5.3L3 8"/><path d="M12 7v5l4 2"/></svg>
+          Historial
+        </div>
+        <div class="nav-item" data-view="reportes">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"/><path d="M14 3v6h6"/><path d="M9 13h6M9 17h6"/></svg>
+          Reportes
+        </div>
+        <div class="nav-item" data-view="admin">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="14" rx="2"/><path d="M3 9h18M8 15h2m4 0h2"/></svg>
+          Panel Admin
+        </div>
+        <div class="nav-item" data-view="config">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .34 1.87l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.7 1.7 0 0 0-1.87-.34 1.7 1.7 0 0 0-1.04 1.56V21a2 2 0 1 1-4 0v-.09A1.7 1.7 0 0 0 9 19.35a1.7 1.7 0 0 0-1.87.34l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.7 1.7 0 0 0 4.65 15a1.7 1.7 0 0 0-1.56-1.04H3a2 2 0 1 1 0-4h.09A1.7 1.7 0 0 0 4.65 9a1.7 1.7 0 0 0-.34-1.87l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.7 1.7 0 0 0 9 4.65a1.7 1.7 0 0 0 1.04-1.56V3a2 2 0 1 1 4 0v.09A1.7 1.7 0 0 0 15 4.65a1.7 1.7 0 0 0 1.87-.34l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.7 1.7 0 0 0 19.35 9a1.7 1.7 0 0 0 1.56 1.04H21a2 2 0 1 1 0 4h-.09A1.7 1.7 0 0 0 19.4 15Z"/></svg>
+          Configuración
+        </div>
+        <div class="nav-item" data-view="asistente">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5Z"/></svg>
+          Asistente
+        </div>
+      </nav>
+    </div>
+
+    <div class="sidebar-foot">
+      <b>Plataforma Inteligente</b> para Detección de Fugas y Optimización del Consumo de Agua mediante IoT y ML.<br>
+      Coordinador + 4 agentes especializados · LLM vía Groq.<br>
+      Datos simulados con fines demostrativos.<br>
+      <span id="dbStatusIndicator" style="display:inline-block; margin-top:6px; font-size:10.5px;">🔌 SQL Server: comprobando…</span>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main>
+
+    <!-- DASHBOARD -->
+    <section class="view active" id="view-dashboard">
+      <div class="topbar">
+        <h1>Panel general</h1>
+        <div class="clock" id="clock">—</div>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat-card">
+          <div class="stat-label">Consumo actual</div>
+          <div class="stat-value teal" id="statFlow">0.0 <span style="font-size:15px;font-weight:600;">L/min</span></div>
+          <div class="stat-delta" id="statFlowDelta">Lectura del medidor general</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Fugas detectadas hoy</div>
+          <div class="stat-value coral" id="statLeaks">0</div>
+          <div class="stat-delta">Confirmadas por el modelo ML</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Ahorro estimado este mes</div>
+          <div class="stat-value gold">S/ 86</div>
+          <div class="stat-delta">Frente al consumo histórico</div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Flujo en tiempo real</h2>
+            <p class="hint">Lectura del caudalímetro principal, últimos 60 segundos</p>
+          </div>
+          <button class="btn btn-alert" id="btnSimulateLeak">Simular fuga</button>
+        </div>
+        <canvas id="flowChart"></canvas>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Sensores conectados</h2>
+            <p class="hint">Estado actual de cada punto de medición</p>
+          </div>
+          <div class="nav-item" style="padding:0;color:var(--teal);font-size:13px;cursor:pointer;" data-view="sensores">Ver todos →</div>
+        </div>
+        <div class="sensor-grid" id="dashboardSensorPreview"></div>
+      </div>
+    </section>
+
+    <!-- SENSORES -->
+    <section class="view" id="view-sensores">
+      <div class="topbar">
+        <h1>Sensores</h1>
+        <div class="clock" id="clock2">—</div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Dispositivos instalados</h2>
+            <p class="hint">Cada sensor envía lecturas de caudal cada pocos segundos al modelo de detección</p>
+          </div>
+        </div>
+        <div class="sensor-grid" id="sensorFullGrid"></div>
+      </div>
+    </section>
+
+    <!-- ALERTAS -->
+    <section class="view" id="view-alertas">
+      <div class="topbar">
+        <h1>Alertas</h1>
+        <div class="clock" id="clock3">—</div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Historial de alertas</h2>
+            <p class="hint">Anomalías identificadas por el modelo de Machine Learning</p>
+          </div>
+          <button class="btn btn-ghost" id="btnClearResolved">Ocultar resueltas</button>
+        </div>
+        <div id="alertList"></div>
+      </div>
+    </section>
+
+    <!-- ACCIONES PENDIENTES -->
+    <section class="view" id="view-acciones">
+      <div class="topbar">
+        <h1>Acciones pendientes</h1>
+        <div class="clock" id="clock8">—</div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Propuestas del Agente Ejecutor</h2>
+            <p class="hint">Los agentes solo proponen: ninguna acción se ejecuta sin tu aprobación (la única excepción es el corte automático, desactivado por defecto)</p>
+          </div>
+        </div>
+
+        <div class="stat-row-sm">
+          <div class="stat-box"><div class="label">Propuestas abiertas</div><div class="value" id="statOpenActions" style="color:var(--gold)">0</div></div>
+          <div class="stat-box"><div class="label">Aprobadas en la sesión</div><div class="value" id="statApprovedActions" style="color:var(--teal)">0</div></div>
+          <div class="stat-box"><div class="label">Litros protegidos (est.)</div><div class="value" id="statLitersProtected">0 L</div></div>
+          <div class="stat-box"><div class="label">Costo evitado (est.)</div><div class="value" id="statCostAvoided">S/ 0</div></div>
+        </div>
+
+        <div id="actionsList"><div class="hint">No hay propuestas por ahora. Simula una fuga para ver el flujo de aprobación.</div></div>
+      </div>
+    </section>
+
+    <!-- AGENTES -->
+    <section class="view" id="view-agentes">
+      <div class="topbar">
+        <h1>Agentes</h1>
+        <div class="clock" id="clock6">—</div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Jerarquía agéntica del sistema</h2>
+            <p class="hint">Cada agente tiene un rol especializado; el Coordinador organiza el flujo entre todos ellos</p>
+          </div>
+        </div>
+
+        <div class="agent-tier single">
+          <div class="agent-card coordinador">
+            <div class="agent-name"><span class="agent-icon">🧠</span>Coordinador</div>
+            <div class="agent-role">Interpreta la solicitud, delega en los agentes y redacta la respuesta (patrón supervisor)</div>
+            <div class="agent-status" id="agentCoordinadorStatus">—</div>
+            <div class="agent-tools">
+              <p class="tool-desc">Function calling con permisos acotados</p>
+              <code>delegar_a_agente(agente, tarea)</code>
+            </div>
+          </div>
+        </div>
+        <div class="agent-connector">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v10M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="agent-tier">
+          <div class="agent-card">
+            <div class="agent-name"><span class="agent-icon">📡</span>Agente Sensor</div>
+            <div class="agent-role">Lee caudal y presión de los sensores</div>
+            <div class="agent-status" id="agentSensorStatus">—</div>
+            <div class="agent-tools">
+              <p class="tool-desc">Function calling con permisos acotados</p>
+              <code>consultarLecturas(sensorId)</code>
+              <code>medirPresion(sensorId)</code>
+            </div>
+          </div>
+          <div class="agent-card">
+            <div class="agent-name"><span class="agent-icon">🤖</span>Agente Detección</div>
+            <div class="agent-role">Analiza patrones y calcula el riesgo de fuga</div>
+            <div class="agent-status" id="agentDeteccionStatus">—</div>
+            <div class="agent-tools">
+              <p class="tool-desc">Function calling con permisos acotados</p>
+              <code>analizarPatron(sensorId)</code>
+              <code>calcularRiesgoFuga(sensorId)</code>
+            </div>
+          </div>
+          <div class="agent-card">
+            <div class="agent-name"><span class="agent-icon">📈</span>Agente Predictivo</div>
+            <div class="agent-role">Proyecta el consumo a N días (extrapolación demostrativa)</div>
+            <div class="agent-status">Bajo demanda</div>
+            <div class="agent-tools">
+              <p class="tool-desc">Function calling con permisos acotados</p>
+              <code>proyectarConsumo(sensorId, dias)</code>
+            </div>
+          </div>
+        </div>
+        <div class="agent-connector">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v10M6 9l6 6 6-6"/></svg>
+        </div>
+        <div class="agent-tier single">
+          <div class="agent-card ejecutor">
+            <div class="agent-name"><span class="agent-icon">⚙️</span>Agente Ejecutor</div>
+            <div class="agent-role">Propone acciones cuando se confirma una fuga; nunca las ejecuta: una persona aprueba</div>
+            <div class="agent-status" id="agentEjecutorStatus">—</div>
+            <div class="agent-tools">
+              <p class="tool-desc">Function calling con permisos acotados</p>
+              <code>proponerAccion(sensorId, tipo, prioridad)</code>
+              <code>registrarDecision(evento)</code>
+            </div>
+          </div>
+        </div>
+
+        <div class="activity-log" style="margin-bottom:16px;">
+          <h2 style="font-size:14px; margin-bottom:2px;">Trazas de los agentes (servidor)</h2>
+          <p class="hint" style="margin-bottom:8px;">Cada consulta del chat queda registrada: entrada, delegaciones, herramientas, mensajes entre agentes y respuesta final.
+            <button id="btnRefrescarTrazas" type="button" style="margin-left:8px; font-size:11px; padding:2px 8px; cursor:pointer;">Actualizar</button></p>
+          <div id="trazasList"></div>
+        </div>
+
+        <div class="activity-log">
+          <h2 style="font-size:14px; margin-bottom:2px;">Registro de actividad</h2>
+          <p class="hint" style="margin-bottom:8px;">Ejecuciones reales de esta sesión</p>
+          <div id="activityLogList"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ANALÍTICA -->
+    <section class="view" id="view-analitica">
+      <div class="topbar">
+        <h1>Analítica</h1>
+        <div class="clock" id="clock7">—</div>
+      </div>
+
+      <div class="analytics-grid">
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Consumo promedio por sensor</h2>
+              <p class="hint">Agente Sensor — haz clic en una barra para ver el detalle</p>
+            </div>
+          </div>
+          <canvas id="barChart"></canvas>
+          <div class="bar-hint">L/min promedio de los últimos minutos</div>
+          <div class="sensor-detail-box" id="sensorDetailBox"></div>
+        </div>
+
+        <div class="panel">
+          <div class="panel-head">
+            <div>
+              <h2>Correlación presión / consumo</h2>
+              <p class="hint">Agente Detección — cada punto es una lectura reciente</p>
+            </div>
+          </div>
+          <div style="position:relative;">
+            <canvas id="corrChart"></canvas>
+            <div id="corrTooltip" style="display:none; position:absolute; pointer-events:none; background:#0e1a1d; border:1px solid var(--border); border-radius:8px; padding:7px 10px; font-size:11px; color:var(--text); white-space:nowrap; z-index:5;"></div>
+          </div>
+          <div class="bar-hint"><span style="color:var(--teal)">●</span> normal &nbsp; <span style="color:var(--coral)">●</span> anomalía</div>
+        </div>
+      </div>
+
+      <div class="predict-card">
+        <h2 style="font-size:14px; margin-bottom:10px;">🔮 Agente Predictivo — proyección de consumo</h2>
+        <div class="predict-value" id="predictValue">—</div>
+        <div class="predict-conf" id="predictConf">Calculando tendencia sobre el historial reciente…</div>
+        <div class="nav-item" style="padding:0;margin-top:10px;color:var(--teal);font-size:13px;cursor:pointer;" data-view="prediccion">Ver predicción completa →</div>
+      </div>
+    </section>
+
+    <!-- PREDICCIÓN -->
+    <section class="view" id="view-prediccion">
+      <div class="topbar">
+        <h1>Predicción</h1>
+        <div class="clock" id="clock9">—</div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>🔮 Agente Predictivo</h2>
+            <p class="hint">Proyección de consumo por horizonte, basada en la tendencia reciente de cada sensor</p>
+          </div>
+        </div>
+        <div class="horizon-tabs">
+          <button class="active" data-horizon="7">7 días</button>
+          <button data-horizon="14">14 días</button>
+          <button data-horizon="30">30 días</button>
+        </div>
+        <div class="stat-row-sm" style="grid-template-columns:repeat(3,1fr);">
+          <div class="stat-box"><div class="label">Proyección total</div><div class="value" id="predTotalValue" style="color:var(--teal)">—</div></div>
+          <div class="stat-box"><div class="label">Precisión del modelo</div><div class="value" id="predAccuracy">—</div></div>
+          <div class="stat-box"><div class="label">Sensor de mayor riesgo</div><div class="value" id="predRiskSensor" style="font-size:14px;">—</div></div>
+        </div>
+        <table class="data-table" id="predTable">
+          <thead><tr><th>Sensor</th><th>Consumo actual</th><th>Proyectado</th><th>Tendencia</th><th>Riesgo</th></tr></thead>
+          <tbody id="predTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- SIMULADOR -->
+    <section class="view" id="view-simulador">
+      <div class="topbar">
+        <h1>Simulador</h1>
+        <div class="clock" id="clock10">—</div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>¿Qué pasaría si…?</h2>
+            <p class="hint">Prueba otra sensibilidad contra los últimos 30 días de datos simulados, sin afectar tu configuración actual</p>
+          </div>
+        </div>
+        <label class="hint" for="simSlider">Sensibilidad de prueba: <b id="simSliderValue">72</b>%</label>
+        <input type="range" min="0" max="100" value="72" id="simSlider" style="width:100%; margin:10px 0 18px 0;">
+        <div class="sim-bars" id="simBars"></div>
+        <div class="bar-hint" style="margin-bottom:14px;">Cada barra es un día de los últimos 30 · rojo = habría generado alerta</div>
+        <div class="stat-row-sm" style="grid-template-columns:repeat(3,1fr);">
+          <div class="stat-box"><div class="label">Alertas con esta sensibilidad</div><div class="value" id="simAlertsCount" style="color:var(--coral)">0</div></div>
+          <div class="stat-box"><div class="label">Alertas con tu config. actual</div><div class="value" id="simCurrentCount">0</div></div>
+          <div class="stat-box"><div class="label">Diferencia</div><div class="value" id="simDiff">0</div></div>
+        </div>
+        <button class="btn btn-primary" id="btnApplySim" style="margin-top:14px;">Aplicar esta sensibilidad</button>
+      </div>
+    </section>
+
+    <!-- HISTORIAL -->
+    <section class="view" id="view-historial">
+      <div class="topbar">
+        <h1>Historial</h1>
+        <div class="clock" id="clock11">—</div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Historial de decisiones</h2>
+            <p class="hint">Registro persistente de esta sesión, filtrable por sensor y por origen de la decisión</p>
+          </div>
+        </div>
+        <div class="filter-row">
+          <select id="filterSensor"><option value="todos">Todos los sensores</option></select>
+          <select id="filterOrigen">
+            <option value="todos">Automático y manual</option>
+            <option value="automatico">Solo automático</option>
+            <option value="manual">Solo manual</option>
+          </select>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>Fecha</th><th>Sensor</th><th>Evento</th><th>Decidido por</th><th>Resultado</th></tr></thead>
+          <tbody id="historyTableBody"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- REPORTES -->
+    <section class="view" id="view-reportes">
+      <div class="topbar">
+        <h1>Reportes</h1>
+        <div class="clock" id="clock12">—</div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Resumen del periodo</h2>
+            <p class="hint">Lo que vería la EPS o el usuario final sobre el impacto del sistema</p>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-ghost" id="btnDownloadReport">Descargar (.csv)</button>
+            <button class="btn btn-primary" id="btnDownloadPdf">Descargar reporte (PDF)</button>
+          </div>
+        </div>
+        <div class="report-grid">
+          <div class="report-card"><div class="value" id="repLeaks">0</div><div class="label">Fugas detectadas</div></div>
+          <div class="report-card"><div class="value" id="repWaterSaved">0 L</div><div class="label">Agua ahorrada estimada</div></div>
+          <div class="report-card"><div class="value" id="repCostAvoided">S/ 0</div><div class="label">Costo evitado estimado</div></div>
+          <div class="report-card"><div class="value" id="repTopSensor">—</div><div class="label">Sensor con más incidencias</div></div>
+        </div>
+        <div class="bar-hint">Cifras estimadas a partir de la actividad simulada en esta sesión. En producción se calculan sobre datos reales de consumo.</div>
+
+        <div style="margin-top:20px; padding-top:18px; border-top:1px solid var(--border);">
+          <h2 style="font-size:14px; margin-bottom:4px;">Enviar por Gmail</h2>
+          <p class="hint" style="margin-bottom:10px;">Primero descarga el PDF arriba; este botón abre Gmail con el correo redactado para que lo adjuntes y envíes.</p>
+          <div style="display:flex; gap:10px; flex-wrap:wrap;">
+            <input type="email" id="reportEmailTo" placeholder="destinatario@correo.com" style="flex:1; min-width:220px; background:var(--panel-alt); border:1px solid var(--border); color:var(--text); border-radius:8px; padding:9px 12px; font-size:12.5px;">
+            <button class="btn btn-ghost" id="btnSendGmail">Redactar en Gmail</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Contenido exclusivo para impresión / Guardar como PDF -->
+    <div id="printArea"></div>
+
+    <!-- PANEL ADMIN -->
+    <section class="view" id="view-admin">
+      <div class="topbar">
+        <h1>Panel Admin</h1>
+        <div class="clock" id="clock13">—</div>
+      </div>
+      <div class="panel">
+        <div class="panel-head">
+          <div>
+            <h2>Gestión de sensores</h2>
+            <p class="hint">Agrega, edita o retira sensores y ajusta su umbral individual de sensibilidad</p>
+          </div>
+        </div>
+
+        <div class="admin-row head">
+          <div>Nombre</div><div>Consumo base (L/min)</div><div>Presión base (bar)</div><div>Umbral individual (%)</div><div>Acciones</div>
+        </div>
+        <div id="adminSensorList"></div>
+
+        <div class="admin-add-row">
+          <input type="text" id="adminNewName" placeholder="Nombre del sensor">
+          <input type="number" id="adminNewBase" placeholder="Consumo base" step="0.1" min="0">
+          <input type="number" id="adminNewPresion" placeholder="Presión base" step="0.1" min="0">
+          <input type="number" id="adminNewUmbral" placeholder="Umbral %" min="0" max="100" value="70">
+          <button class="btn btn-primary" id="btnAddSensor">Agregar</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- CONFIGURACIÓN -->
+    <section class="view" id="view-config">
+      <div class="topbar">
+        <h1>Configuración</h1>
+        <div class="clock" id="clock4">—</div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head"><h2>Sensibilidad de detección</h2></div>
+
+        <div class="config-row">
+          <div>
+            <div class="config-label">Umbral de anomalía</div>
+            <div class="config-desc">Un umbral más bajo detecta fugas más pequeñas, pero puede generar más falsas alarmas.</div>
+          </div>
+          <div class="config-control">
+            <input type="range" min="1" max="100" value="72" id="sensitivitySlider">
+            <span class="range-value" id="sensitivityValue">72%</span>
+          </div>
+        </div>
+
+        <div class="config-row">
+          <div>
+            <div class="config-label">Notificaciones push</div>
+            <div class="config-desc">Recibe una alerta instantánea en tu teléfono cuando se detecte una anomalía.</div>
+          </div>
+          <div class="config-control" style="text-align:right;">
+            <label class="switch"><input type="checkbox" checked id="toggleroPush"><span class="slider-toggle"></span></label>
+          </div>
+        </div>
+
+        <div class="config-row">
+          <div>
+            <div class="config-label">Notificaciones por correo</div>
+            <div class="config-desc">Recibe un resumen diario de consumo y un aviso inmediato ante fugas confirmadas.</div>
+          </div>
+          <div class="config-control" style="text-align:right;">
+            <label class="switch"><input type="checkbox" id="toggleEmail"><span class="slider-toggle"></span></label>
+          </div>
+        </div>
+
+        <div class="config-row">
+          <div>
+            <div class="config-label">Corte automático de suministro</div>
+            <div class="config-desc">Cierra la válvula principal automáticamente ante una fuga de alta confianza (requiere válvula motorizada compatible). Desactivado por defecto: es la única excepción a la aprobación humana.</div>
+          </div>
+          <div class="config-control" style="text-align:right;">
+            <label class="switch"><input type="checkbox" id="toggleAuto"><span class="slider-toggle"></span></label>
+          </div>
+        </div>
+
+        <div class="config-row" style="border-bottom:none; padding-top:20px;">
+          <div></div>
+          <div class="config-control">
+            <button class="btn btn-primary" id="btnSaveConfig">Guardar cambios</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ASISTENTE -->
+    <section class="view" id="view-asistente">
+      <div class="topbar">
+        <h1>Asistente</h1>
+        <div class="clock" id="clock5">—</div>
+      </div>
+
+      <div class="panel chat-panel" id="chatPanel" style="padding-top:0;">
+        <div class="channel-tabs">
+          <button class="active" id="btnChannelWeb">Chat Web</button>
+          <button id="btnChannelWa">WhatsApp</button>
+        </div>
+        <div class="chat-head">
+          <h2>Asistente de AquaSense IA</h2>
+          <p id="chatSubtitle">Pregúntale al sistema de agentes por el estado de tus sensores, las fugas del día o el ahorro estimado.</p>
+        </div>
+        <div class="chat-body" id="chatBody"></div>
+        <div class="quick-row" id="quickRow">
+          <button class="quick-btn" data-q="¿Hay alguna fuga activa ahora mismo?">¿Hay alguna fuga activa?</button>
+          <button class="quick-btn" data-q="¿Cuántas fugas se detectaron hoy?">Fugas detectadas hoy</button>
+          <button class="quick-btn" data-q="¿Cómo están mis sensores?">Estado de sensores</button>
+          <button class="quick-btn" data-q="¿Cómo funcionan los agentes del sistema?">¿Cómo funcionan los agentes?</button>
+        </div>
+        <div class="chat-input-row">
+          <input type="text" id="chatInput" placeholder="Escribe tu pregunta sobre el sistema...">
+          <button class="btn btn-primary" id="chatSend">Enviar</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<div class="toast" id="toast">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+  <span id="toastMsg">Listo</span>
+</div>
+
+<script>
+(function(){
+  "use strict";
+/* ---------------- Sincronización con SQL Server (best-effort) ---------------- */
+  // Si el backend de server/ está corriendo (npm start), estas llamadas persisten
+  // datos reales en SQL Server. Si no está corriendo, fallan en silencio y el
+  // prototipo sigue funcionando 100% local, igual que siempre.
+// La interfaz la sirve el mismo servidor que expone la API, por eso la ruta es relativa.
+// Ya no hay claves en el navegador: cualquier secreto del cliente es público.
+const DB_API_BASE = (location.protocol === 'file:') ? 'http://localhost:3001/api' : '/api';
+let dbConnected = false;
+let dbChecked = false;
+
+async function dbFetch(path, options){
+  // Sin SQL Server configurado no se intenta persistir (evita errores 503 en cada acción).
+  if(dbChecked && !dbConnected && !path.startsWith('/agentes') && path !== '/health') return null;
+  try{
+     const res = await fetch(DB_API_BASE + path, {
+      headers: { 'Content-Type': 'application/json' },
+      ...options,
+    });
+    return res.ok ? res.json().catch(() => ({})) : null;
+  } catch {
+    return null; // backend no disponible: se ignora, el prototipo sigue en modo local
+  }
+}
+  async function checkDbConnection(){
+    const indicator = document.getElementById('dbStatusIndicator');
+    const health = await dbFetch('/health');
+    dbConnected = !!(health && health.db === 'conectado');
+    dbChecked = true;
+    if(indicator){
+      const agentes = !health ? '⚪ Servidor de agentes: sin conexión (modo local)'
+        : (health.llm && health.llm.modo === 'mock' ? '🟡 Agentes: modo SIMULADO (sin LLM real)' : '🟢 Agentes: LLM en línea');
+      indicator.textContent = agentes + ' · SQL Server: ' + (dbConnected ? 'conectado' : 'no configurado');
+    }
+  }
+
+  /* ---------------- Navigation ---------------- */
+  const navItems = document.querySelectorAll('.nav-item[data-view]');
+  const views = document.querySelectorAll('.view');
+  function goTo(name){
+    views.forEach(v => v.classList.toggle('active', v.id === 'view-' + name));
+    navItems.forEach(n => n.classList.toggle('active', n.dataset.view === name));
+    if(name === 'analitica'){
+      setTimeout(() => { drawBarChart(); drawScatterChart(); }, 30);
+    }
+  }
+  navItems.forEach(item => item.addEventListener('click', () => goTo(item.dataset.view)));
+
+  /* ---------------- Clock ---------------- */
+  const clocks = ['clock','clock2','clock3','clock4','clock5','clock6','clock7','clock8','clock9','clock10','clock11','clock12','clock13'].map(id => document.getElementById(id));
+  function tickClock(){
+    const now = new Date();
+    const str = now.toLocaleDateString('es-PE', { day:'2-digit', month:'short' }) + ' · ' +
+                now.toLocaleTimeString('es-PE', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+    clocks.forEach(c => { if(c) c.textContent = str; });
+  }
+  tickClock();
+  setInterval(tickClock, 1000);
+
+  /* ---------------- Toast ---------------- */
+  const toast = document.getElementById('toast');
+  const toastMsg = document.getElementById('toastMsg');
+  let toastTimer = null;
+  function showToast(msg){
+    toastMsg.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 2600);
+  }
+
+  /* ---------------- Sensors state ---------------- */
+  const sensors = [
+    { id:'general',  name:'Medidor general',   base:6.2, presionBase:3.1, umbral:60, status:'ok' },
+    { id:'cocina',   name:'Cocina',            base:1.1, presionBase:2.4, umbral:75, status:'ok' },
+    { id:'bano',     name:'Baño principal',    base:0.8, presionBase:2.2, umbral:65, status:'ok' },
+    { id:'jardin',   name:'Riego de jardín',   base:2.4, presionBase:2.8, umbral:80, status:'ok' },
+  ];
+
+  function pickWeightedSensor(){
+    // excludes the general meter (index 0) so leaks are attributed to a specific point when possible
+    const candidates = sensors.length > 1 ? sensors.slice(1) : sensors;
+    const weights = candidates.map(s => Math.max(5, s.umbral ?? 50));
+    const total = weights.reduce((a,b)=>a+b,0);
+    let r = Math.random()*total;
+    for(let i=0;i<candidates.length;i++){ r -= weights[i]; if(r<=0) return candidates[i]; }
+    return candidates[candidates.length-1];
+  }
+
+  function sensorCardHTML(s){
+    const dotClass = s.status === 'alert' ? 'alert' : (s.status === 'off' ? 'off' : '');
+    const statusText = s.status === 'alert' ? 'Anomalía detectada' : (s.status === 'off' ? 'Sin conexión' : 'Funcionando con normalidad');
+    return `
+      <div class="sensor-card" data-sensor="${s.id}">
+        <div class="sensor-top">
+          <div class="sensor-name"><span class="status-dot ${dotClass}"></span>${s.name}</div>
+        </div>
+        <div class="sensor-status-text">${statusText}</div>
+        <div class="sensor-reading">${s.reading.toFixed(1)} <span>L/min</span></div>
+        <div class="sensor-actions">
+          <button class="btn btn-ghost btn-ping" data-id="${s.id}">Forzar lectura</button>
+        </div>
+      </div>`;
+  }
+
+  function renderSensors(){
+    const full = document.getElementById('sensorFullGrid');
+    const preview = document.getElementById('dashboardSensorPreview');
+    full.innerHTML = sensors.map(sensorCardHTML).join('');
+    preview.innerHTML = sensors.slice(0,4).map(sensorCardHTML).join('');
+    drawBarChart();
+    document.querySelectorAll('.btn-ping').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const s = sensors.find(x => x.id === btn.dataset.id);
+        showToast('Lectura forzada en «' + s.name + '»: ' + s.reading.toFixed(1) + ' L/min');
+      });
+    });
+  }
+
+  /* ---------------- Alerts state ---------------- */
+  let alerts = [];
+  let alertSeq = 0;
+  function addAlert(sensorName, confidence){
+    alertSeq++;
+    const a = {
+      id: alertSeq,
+      sensorName,
+      confidence,
+      time: new Date(),
+      resolved: false,
+    };
+    alerts.unshift(a);
+    renderAlerts();
+    updateAlertBadge();
+    dbFetch('/alertas', { method:'POST', body: JSON.stringify({ sensorNombre: sensorName, confianza: confidence }) });
+    return a;
+  }
+
+  function updateAlertBadge(){
+    const open = alerts.filter(a => !a.resolved).length;
+    const badge = document.getElementById('navAlertBadge');
+    if(open > 0){ badge.style.display='inline-block'; badge.textContent = open; }
+    else { badge.style.display='none'; }
+  }
+
+  function timeAgo(date){
+    return date.toLocaleTimeString('es-PE', { hour:'2-digit', minute:'2-digit', second:'2-digit' });
+  }
+
+  let hideResolved = false;
+  function renderAlerts(){
+    const list = document.getElementById('alertList');
+    const visible = hideResolved ? alerts.filter(a => !a.resolved) : alerts;
+    if(visible.length === 0){
+      list.innerHTML = `
+        <div class="empty-state">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3.6 4.2 6 7.6 6 10.5A6 6 0 1 1 6 13.5C6 10.6 8.4 7.2 12 3Z"/></svg><br>
+          Sin alertas registradas. El sistema está monitoreando con normalidad.
+        </div>`;
+      return;
+    }
+    list.innerHTML = visible.map(a => `
+      <div class="alert-item">
+        <div class="alert-icon ${a.resolved ? 'resolved' : ''}">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${a.resolved ? '<path d="M20 6 9 17l-5-5"/>' : '<path d="M12 3 2 20h20L12 3Z"/><path d="M12 9v5"/>'}</svg>
+        </div>
+        <div class="alert-body">
+          <div class="alert-title">${a.resolved ? 'Alerta resuelta' : 'Posible fuga detectada'} — ${a.sensorName}</div>
+          <div class="alert-meta">Registrada a las ${timeAgo(a.time)}</div>
+          <div class="alert-conf">${a.confidence}% de confianza del modelo</div>
+        </div>
+        <div class="alert-actions">
+          ${a.resolved ? '' : `<button class="btn btn-ghost btn-close-valve" data-id="${a.id}">Cerrar válvula</button><button class="btn btn-ghost btn-resolve" data-id="${a.id}">Marcar como resuelta</button>`}
+        </div>
+      </div>`).join('');
+
+    document.querySelectorAll('.btn-resolve').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const a = alerts.find(x => x.id === Number(btn.dataset.id));
+        if(a){
+          a.resolved = true;
+          const sensor = sensors.find(s => s.name === a.sensorName);
+          if(sensor) sensor.status = 'ok';
+          renderAlerts();
+          renderSensors();
+          updateAlertBadge();
+          renderAgents();
+          logActivity('Coordinador', 'Alerta cerrada', `"${a.sensorName}" marcada como resuelta manualmente.`);
+          logDecision(a.sensorName, 'Alerta resuelta', 'Manual (usuario)', 'Resuelta');
+          showToast('Alerta marcada como resuelta');
+        }
+      });
+    });
+    document.querySelectorAll('.btn-close-valve').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const a = alerts.find(x => x.id === Number(btn.dataset.id));
+        if(a){
+          closeValve(a, false);
+        }
+      });
+    });
+  }
+
+  /* ---------------- Agentes (jerarquía) ---------------- */
+  let executorActions = 0;
+  function renderAgents(){
+    const coord = document.getElementById('agentCoordinadorStatus');
+    const sensorEl = document.getElementById('agentSensorStatus');
+    const detEl = document.getElementById('agentDeteccionStatus');
+    const execEl = document.getElementById('agentEjecutorStatus');
+    if(!coord) return;
+
+    const openAlerts = alerts.filter(a => !a.resolved);
+    const totalFlow = sensors.reduce((s,x) => s + x.reading, 0).toFixed(1);
+
+    coord.textContent = `Orquestando ${sensors.length} sensores · sensibilidad al ${sensitivity}% · ${totalLeaksToday} fuga(s) hoy.`;
+    coord.className = 'agent-status ' + (openAlerts.length ? 'busy' : 'ok');
+
+    sensorEl.textContent = `Recibiendo lecturas de ${sensors.length} sensores · flujo total ${totalFlow} L/min.`;
+    sensorEl.className = 'agent-status ok';
+
+    if(leakActive || openAlerts.length){
+      const conf = openAlerts[0] ? openAlerts[0].confidence : 85;
+      detEl.textContent = `Anomalía en curso · confianza ${conf}% · analizando patrón de consumo.`;
+      detEl.className = 'agent-status busy';
+    } else {
+      detEl.textContent = 'Sin anomalías. Todos los patrones dentro de lo normal.';
+      detEl.className = 'agent-status ok';
+    }
+
+    if(openAlerts.length){
+      execEl.textContent = `En espera de confirmación · ${openAlerts.length} alerta(s) sin resolver.`;
+      execEl.className = 'agent-status busy';
+    } else if(executorActions > 0){
+      execEl.textContent = `En espera · ${executorActions} acción(es) de cierre ejecutada(s) en esta sesión.`;
+      execEl.className = 'agent-status ok';
+    } else {
+      execEl.textContent = 'En espera. Sin acciones pendientes.';
+      execEl.className = 'agent-status ok';
+    }
+  }
+
+  function closeValve(alert, automatic){
+    alert.resolved = true;
+    const sensor = sensors.find(s => s.name === alert.sensorName);
+    if(sensor) sensor.status = 'ok';
+    executorActions++;
+    renderAlerts();
+    renderSensors();
+    updateAlertBadge();
+    renderAgents();
+    logActivity('Agente Ejecutor', automatic ? 'Cierre automático ejecutado' : 'Cierre manual ejecutado', `Válvula de "${alert.sensorName}" cerrada.`);
+    logDecision(alert.sensorName, 'Cierre de válvula', automatic ? 'Automático (Agente Ejecutor)' : 'Manual (usuario)', 'Ejecutado');
+    showToast((automatic ? 'Agente Ejecutor: cierre automático' : 'Válvula cerrada') + ' en «' + alert.sensorName + '»');
+  }
+
+  document.getElementById('btnClearResolved').addEventListener('click', (e) => {
+    hideResolved = !hideResolved;
+    e.target.textContent = hideResolved ? 'Mostrar todas' : 'Ocultar resueltas';
+    renderAlerts();
+  });
+
+  /* ---------------- Flow chart + simulation ---------------- */
+  const canvas = document.getElementById('flowChart');
+  const ctx = canvas.getContext('2d');
+  const HISTORY_LEN = 60;
+  let history = new Array(HISTORY_LEN).fill(6.2);
+  let leakActive = false;
+  let leakTicksLeft = 0;
+  let sensitivity = 72;
+  let totalLeaksToday = 0;
+  let tickCount = 0;
+  let correlationSamples = [];
+  let activityLog = [];
+
+  function pushCorrelationSamples(){
+    sensors.forEach(s => {
+      correlationSamples.push({ x: s.reading, y: s.presion, alert: s.status === 'alert', name: s.name });
+    });
+    if(correlationSamples.length > 48) correlationSamples.splice(0, correlationSamples.length - 48);
+    drawScatterChart();
+  }
+
+  function logActivity(agent, action, detail){
+    const colors = {
+      'Coordinador': '#E2725B', 'Agente Sensor': '#0066FF', 'Agente Detección': '#7C9CE8',
+      'Agente Ejecutor': '#E8B75D', 'Agente Predictivo': '#5DBE8A', 'Asistente': '#B892E8'
+    };
+    activityLog.unshift({ time: new Date(), agent, action, detail, color: colors[agent] || '#0066FF' });
+    if(activityLog.length > 8) activityLog.pop();
+    renderActivityLog();
+  }
+
+  function renderActivityLog(){
+    const el = document.getElementById('activityLogList');
+    if(!el) return;
+    el.innerHTML = activityLog.map(a => `
+      <div class="activity-item">
+        <div class="activity-avatar" style="background:${a.color}">${a.agent.charAt(0)}</div>
+        <div class="activity-time">${a.time.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</div>
+        <div class="activity-text"><b>${a.agent}</b> — ${a.action}. ${a.detail}</div>
+      </div>`).join('') || '<div class="hint">Sin actividad todavía.</div>';
+  }
+
+  function drawBarChart(){
+    const c = document.getElementById('barChart');
+    if(!c) return;
+    const rect = c.getBoundingClientRect();
+    c.width = rect.width * devicePixelRatio; c.height = rect.height * devicePixelRatio;
+    const bctx = c.getContext('2d');
+    const w = c.width, h = c.height;
+    bctx.clearRect(0,0,w,h);
+    const max = Math.max(...sensors.map(s=>s.reading), 1) * 1.25;
+    const padTop = 10*devicePixelRatio, padBottom = 26*devicePixelRatio;
+    const barW = w / sensors.length;
+    sensors.forEach((s,i) => {
+      const barH = (s.reading/max) * (h-padTop-padBottom);
+      const x = i*barW + barW*0.22;
+      const bw = barW*0.56;
+      const y = h - padBottom - barH;
+      bctx.fillStyle = s.status === 'alert' ? 'rgba(226,114,91,0.85)' : 'rgba(0,102,255,0.85)';
+      bctx.beginPath();
+      const r = 5*devicePixelRatio;
+      bctx.moveTo(x, y+barH); bctx.lineTo(x, y+r);
+      bctx.arcTo(x,y,x+r,y,r); bctx.lineTo(x+bw-r,y); bctx.arcTo(x+bw,y,x+bw,y+r,r);
+      bctx.lineTo(x+bw, y+barH); bctx.closePath(); bctx.fill();
+      bctx.fillStyle = '#7FA6A3';
+      bctx.font = (10*devicePixelRatio)+'px Inter, sans-serif';
+      bctx.textAlign = 'center';
+      const label = s.name.length > 10 ? s.name.slice(0,9)+'…' : s.name;
+      bctx.fillText(label, x+bw/2, h - 8*devicePixelRatio);
+      bctx.fillStyle = '#F5F6F8';
+      bctx.font = 'bold '+(11*devicePixelRatio)+'px Inter, sans-serif';
+      bctx.fillText(s.reading.toFixed(1), x+bw/2, y - 6*devicePixelRatio);
+    });
+    c.onclick = (e) => {
+      const rect2 = c.getBoundingClientRect();
+      const idx = Math.floor((e.clientX - rect2.left) / rect2.width * sensors.length);
+      const s = sensors[idx];
+      if(!s) return;
+      const box = document.getElementById('sensorDetailBox');
+      box.classList.add('show');
+      box.innerHTML = `<b>${s.name}</b> — ${s.reading.toFixed(1)} L/min · presión ${s.presion.toFixed(1)} bar<br>
+        Estado: ${s.status === 'alert' ? '<span style="color:var(--coral)">anomalía activa</span>' : '<span style="color:var(--teal)">normal</span>'}`;
+      logActivity('Agente Sensor', 'Consulta de detalle', `Se seleccionó "${s.name}" en Analítica.`);
+    };
+  }
+
+  let scatterPointPositions = [];
+  function drawScatterChart(){
+    const c = document.getElementById('corrChart');
+    if(!c) return;
+    const rect = c.getBoundingClientRect();
+    c.width = rect.width * devicePixelRatio; c.height = rect.height * devicePixelRatio;
+    const sctx = c.getContext('2d');
+    const w = c.width, h = c.height;
+    sctx.clearRect(0,0,w,h);
+    scatterPointPositions = [];
+    if(correlationSamples.length === 0) return;
+    const maxX = Math.max(...correlationSamples.map(p=>p.x), 1) * 1.15;
+    const maxY = Math.max(...correlationSamples.map(p=>p.y), 1) * 1.15;
+    sctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    sctx.lineWidth = 1*devicePixelRatio;
+    for(let i=1;i<4;i++){
+      const y = h*(i/4);
+      sctx.beginPath(); sctx.moveTo(0,y); sctx.lineTo(w,y); sctx.stroke();
+    }
+    correlationSamples.forEach(p => {
+      const x = (p.x/maxX)*w*0.94 + w*0.02;
+      const y = h - (p.y/maxY)*h*0.9 - h*0.04;
+      sctx.beginPath();
+      sctx.arc(x,y, 3.4*devicePixelRatio, 0, Math.PI*2);
+      sctx.fillStyle = p.alert ? 'rgba(226,114,91,0.85)' : 'rgba(0,102,255,0.75)';
+      sctx.fill();
+      scatterPointPositions.push({ px:x/devicePixelRatio, py:y/devicePixelRatio, sample:p });
+    });
+  }
+
+  const corrCanvas = document.getElementById('corrChart');
+  const corrTooltip = document.getElementById('corrTooltip');
+  if(corrCanvas){
+    corrCanvas.addEventListener('mousemove', (e) => {
+      const rect = corrCanvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+      let closest = null, closestDist = 12;
+      scatterPointPositions.forEach(pt => {
+        const d = Math.hypot(pt.px-mx, pt.py-my);
+        if(d < closestDist){ closestDist = d; closest = pt; }
+      });
+      if(closest){
+        corrTooltip.style.display = 'block';
+        corrTooltip.style.left = Math.min(mx+12, rect.width-160) + 'px';
+        corrTooltip.style.top = Math.max(my-40, 0) + 'px';
+        corrTooltip.innerHTML = `<b>${closest.sample.name}</b><br>Consumo: ${closest.sample.x.toFixed(1)} L/min<br>Presión: ${closest.sample.y.toFixed(1)} bar<br>${closest.sample.alert ? '<span style="color:var(--coral)">Anomalía</span>' : '<span style="color:var(--teal)">Normal</span>'}`;
+      } else {
+        corrTooltip.style.display = 'none';
+      }
+    });
+    corrCanvas.addEventListener('mouseleave', () => { corrTooltip.style.display = 'none'; });
+  }
+
+  function updatePrediction(){
+    const el = document.getElementById('predictValue');
+    const conf = document.getElementById('predictConf');
+    if(!el) return;
+    const n = history.length;
+    const recent = history.slice(n-20);
+    const first = recent.slice(0,10).reduce((a,b)=>a+b,0)/10;
+    const last = recent.slice(10).reduce((a,b)=>a+b,0)/10;
+    const trendPct = ((last-first)/Math.max(first,0.1))*100;
+    const projected = Math.max(0, last * 24 * 60 / 1000).toFixed(1); // rough daily projection in m3-ish scale for demo
+    const confidence = Math.min(97, Math.max(78, 90 - Math.abs(trendPct)*0.4)).toFixed(1);
+    el.textContent = `${trendPct >= 0 ? '+' : ''}${trendPct.toFixed(1)}% vs. hace unos minutos`;
+    el.style.color = trendPct > 15 ? 'var(--coral)' : 'var(--teal)';
+    conf.textContent = `Proyección estimada: ~${projected} m³/día si la tendencia continúa · confianza del modelo ${confidence}%`;
+  }
+
+  function resizeCanvas(){
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width * devicePixelRatio;
+    canvas.height = rect.height * devicePixelRatio;
+  }
+
+  function drawChart(){
+    const w = canvas.width, h = canvas.height;
+    ctx.clearRect(0,0,w,h);
+
+    const max = Math.max(12, ...history) * 1.15;
+    const min = 0;
+    const stepX = w / (HISTORY_LEN - 1);
+
+    // grid lines
+    ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+    ctx.lineWidth = 1 * devicePixelRatio;
+    for(let i=1; i<4; i++){
+      const y = h - (h * (i/4));
+      ctx.beginPath();
+      ctx.moveTo(0,y);
+      ctx.lineTo(w,y);
+      ctx.stroke();
+    }
+
+    // threshold line
+    const threshold = 6.2 + (100 - sensitivity) / 100 * 9 + 3;
+    const thY = h - ((threshold - min)/(max-min))*h;
+    ctx.strokeStyle = 'rgba(226,114,91,0.55)';
+    ctx.setLineDash([5*devicePixelRatio,5*devicePixelRatio]);
+    ctx.lineWidth = 1.3*devicePixelRatio;
+    ctx.beginPath();
+    ctx.moveTo(0,thY); ctx.lineTo(w,thY); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // area fill
+    ctx.beginPath();
+    history.forEach((v,i) => {
+      const x = i*stepX;
+      const y = h - ((v-min)/(max-min))*h;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.lineTo(w,h); ctx.lineTo(0,h); ctx.closePath();
+    const grad = ctx.createLinearGradient(0,0,0,h);
+    grad.addColorStop(0, leakActive ? 'rgba(226,114,91,0.28)' : 'rgba(0,102,255,0.24)');
+    grad.addColorStop(1, 'rgba(0,102,255,0.0)');
+    ctx.fillStyle = grad;
+    ctx.fill();
+
+    // line
+    ctx.beginPath();
+    history.forEach((v,i) => {
+      const x = i*stepX;
+      const y = h - ((v-min)/(max-min))*h;
+      if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+    });
+    ctx.strokeStyle = leakActive ? '#E2725B' : '#0066FF';
+    ctx.lineWidth = 2.4 * devicePixelRatio;
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+
+    // last point dot
+    const lastX = (HISTORY_LEN-1)*stepX;
+    const lastY = h - ((history[history.length-1]-min)/(max-min))*h;
+    ctx.beginPath();
+    ctx.arc(lastX, lastY, 4*devicePixelRatio, 0, Math.PI*2);
+    ctx.fillStyle = leakActive ? '#E2725B' : '#0066FF';
+    ctx.fill();
+  }
+
+  function triggerLeak(manual){
+    if(leakActive) return;
+    leakActive = true;
+    leakTicksLeft = 9;
+    const affected = pickWeightedSensor();
+    affected.status = 'alert';
+    const confidence = Math.floor(80 + Math.random()*15);
+    const alert = addAlert(affected.name, confidence);
+    totalLeaksToday++;
+    document.getElementById('statLeaks').textContent = totalLeaksToday;
+    renderSensors();
+    renderAgents();
+    logActivity('Agente Detección', 'Anomalía detectada', `Sensor "${affected.name}" con ${confidence}% de confianza.`);
+    logDecision(affected.name, 'Anomalía detectada', 'Automático (Agente Detección)', `${confidence}% de confianza`);
+    proposeActions(alert);
+    showToast((manual ? 'Fuga simulada' : 'Anomalía detectada') + ' en «' + affected.name + '» — ' + confidence + '% de confianza');
+
+    const autoToggle = document.getElementById('toggleAuto');
+    if(autoToggle && autoToggle.checked && confidence >= 85){
+      setTimeout(() => { if(!alert.resolved) closeValve(alert, true); }, 2600);
+    }
+  }
+
+  document.getElementById('btnSimulateLeak').addEventListener('click', () => triggerLeak(true));
+
+  function tickSimulation(){
+    // base reading with gentle noise
+    let last = history[history.length-1];
+    let target = 6.2 + Math.sin(Date.now()/9000)*0.8;
+
+    if(leakActive){
+      target += 9 + Math.random()*3;
+      leakTicksLeft--;
+      if(leakTicksLeft <= 0){
+        leakActive = false;
+        // Una fuga no se arregla sola: el sensor sigue en alerta mientras exista una alerta sin resolver
+        // (se resuelve cerrando la válvula o con "Marcar como resuelta").
+        sensors.forEach(s => { if(s.status==='alert' && !alerts.some(a => !a.resolved && a.sensorName === s.name)) s.status = 'ok'; });
+        renderSensors();
+      }
+    } else {
+      // small random chance of spontaneous anomaly, scaled (inversely) by sensitivity
+      const chance = (100 - sensitivity) / 100 * 0.004;
+      if(Math.random() < chance){
+        triggerLeak(false);
+      }
+    }
+
+    const next = last + (target - last) * 0.35 + (Math.random()-0.5)*0.4;
+    history.push(Math.max(0, next));
+    history.shift();
+
+    // update per-sensor readings
+    sensors.forEach(s => {
+      const noise = (Math.random()-0.5)*0.3;
+      s.reading = Math.max(0, s.base + noise + (s.status==='alert' ? 4 + Math.random()*2 : 0));
+      s.presion = Math.max(0.5, s.presionBase + (s.reading - s.base) * 0.18 + (Math.random()-0.5)*0.15);
+    });
+    pushCorrelationSamples();
+    tickCount++;
+    if(tickCount % 6 === 0){
+      logActivity('Agente Sensor', 'Lectura recibida', `Flujo total ${next.toFixed(1)} L/min sobre ${sensors.length} sensores.`);
+    }
+
+    document.getElementById('statFlow').innerHTML = next.toFixed(1) + ' <span style="font-size:15px;font-weight:600;">L/min</span>';
+    document.getElementById('statFlowDelta').textContent = leakActive
+      ? 'Consumo muy por encima de lo habitual'
+      : 'Lectura del medidor general';
+
+    renderSensors();
+    drawChart();
+    renderAgents();
+    updatePrediction();
+    renderPredictionPage();
+  }
+
+  /* ---------------- Config ---------------- */
+  const sensSlider = document.getElementById('sensitivitySlider');
+  const sensValue = document.getElementById('sensitivityValue');
+  sensSlider.addEventListener('input', () => {
+    sensitivity = Number(sensSlider.value);
+    sensValue.textContent = sensitivity + '%';
+  });
+
+  document.getElementById('btnSaveConfig').addEventListener('click', () => {
+    showToast('Configuración guardada correctamente');
+  });
+
+  /* ---------------- Asistente (chat) ---------------- */
+  const chatBody = document.getElementById('chatBody');
+  const chatInput = document.getElementById('chatInput');
+
+  function addMsg(text, who, tag){
+    const div = document.createElement('div');
+    div.className = 'msg ' + (who === 'user' ? 'msg-user' : 'msg-bot');
+    if(tag) div.innerHTML = `<span class="msg-agent-tag">${escHtml(tag)}</span>${escHtml(text).replace(/\n/g,'<br>')}`;
+    else div.textContent = text;
+    chatBody.appendChild(div);
+    chatBody.scrollTop = chatBody.scrollHeight;
+  }
+
+  function answerFor(question){
+    const q = question.toLowerCase();
+    const openAlerts = alerts.filter(a => !a.resolved);
+    const activeSensors = sensors.filter(s => s.status === 'alert');
+
+    if(q.includes('fuga activa') || q.includes('fuga ahora') || (q.includes('activa') && q.includes('fuga'))){
+      if(leakActive || openAlerts.length > 0){
+        const names = activeSensors.map(s => s.name).join(', ') || 'un punto de la red';
+        return { tag:'Agente Detección', text:`Sí, hay ${openAlerts.length || 1} alerta(s) sin resolver. Sensor(es) afectado(s): ${names}. Confianza promedio del modelo: ${openAlerts[0] ? openAlerts[0].confidence : 85}%.` };
+      }
+      return { tag:'Agente Detección', text:'No, en este momento no hay ninguna fuga activa. Todos los sensores reportan consumo dentro de lo normal.' };
+    }
+
+    if(q.includes('cuántas fugas') || q.includes('cuantas fugas') || q.includes('fugas hoy') || q.includes('fugas detectadas')){
+      return { tag:'Agente Coordinador', text:`Hoy se registraron ${totalLeaksToday} fuga(s) confirmada(s) por el modelo de Machine Learning. ${alerts.filter(a=>!a.resolved).length} siguen sin resolver.` };
+    }
+
+    if(q.includes('cerrar') && (q.includes('válvula') || q.includes('valvula'))){
+      const target = sensors.find(s => q.includes(s.name.toLowerCase()));
+      if(target){
+        const alert = openAlerts.find(a => a.sensorName === target.name);
+        if(alert){
+          return { tag:'Agente Ejecutor', text:`Hay una fuga activa en "${target.name}". Por seguridad no cierro válvulas desde el chat: revisa la propuesta en "Acciones pendientes" y apruébala allí.` };
+        }
+        return { tag:'Agente Ejecutor', text:`"${target.name}" no tiene ninguna fuga activa en este momento, así que no hay necesidad de cerrar su válvula.` };
+      }
+      return { tag:'Agente Ejecutor', text:'El cierre automático de la válvula se activa solo si la opción "Corte automático de suministro" está encendida en Configuración y el modelo tiene alta confianza en la fuga detectada. Dime el nombre del sensor si quieres que la cierre manualmente.' };
+    }
+
+    if(q.includes('acciones pendientes') || q.includes('propuestas') || q.includes('por aprobar')){
+      const open = pendingActions.filter(a => a.status === 'pendiente');
+      if(open.length === 0) return { tag:'Agente Ejecutor', text:'No hay acciones pendientes de aprobación en este momento.' };
+      const lines = open.slice(0,4).map(a => `• ${a.tipo} (${a.prioridad}) — ${a.sensorName}`).join('\n');
+      return { tag:'Agente Ejecutor', text:`Hay ${open.length} acción(es) esperando tu aprobación:\n${lines}\nPuedes revisarlas en "Acciones pendientes".` };
+    }
+
+    if(q.includes('predicción') || q.includes('prediccion') || q.includes('proyección') || q.includes('proyeccion')){
+      const el = document.getElementById('predTotalValue');
+      const val = el ? el.textContent : 'calculándose';
+      return { tag:'Agente Predictivo', text:`La proyección de consumo a ${predHorizon} días es de aproximadamente ${val}. Puedes cambiar el horizonte en la pestaña "Predicción".` };
+    }
+
+    if(q.includes('historial') || q.includes('decisiones tomadas')){
+      const last = decisionHistory[0];
+      return { tag:'Coordinador', text: last
+        ? `La última decisión registrada fue "${last.evento}" en "${last.sensorName}" (${last.decididoPor}). Llevamos ${decisionHistory.length} decisión(es) en esta sesión. Puedes verlas todas en "Historial".`
+        : 'Todavía no se registró ninguna decisión en esta sesión.' };
+    }
+
+    if(q.includes('reporte') || q.includes('costo evitado') || q.includes('agua ahorrada')){
+      const approvedActions = pendingActions.filter(a => a.status === 'aprobada').length;
+      const waterSaved = approvedActions * 40;
+      return { tag:'Agente Coordinador', text:`En esta sesión se han evitado aproximadamente ${waterSaved} litros gracias a las acciones aprobadas. Puedes descargar el reporte completo en la pestaña "Reportes".` };
+    }
+
+    if(q.includes('más riesgo') || q.includes('mas riesgo') || q.includes('riesgo de fuga')){
+      let riskiest = null, riskiestPct = -Infinity;
+      sensors.forEach(s => {
+        const trendPct = ((s.reading - s.base) / Math.max(s.base,0.2)) * 100;
+        if(trendPct > riskiestPct){ riskiestPct = trendPct; riskiest = s.name; }
+      });
+      return { tag:'Agente Predictivo', text:`El sensor con mayor riesgo ahora mismo es "${riskiest}", con una desviación de ${riskiestPct.toFixed(1)}% sobre su consumo base.` };
+    }
+
+    if(q.includes('sensor') || q.includes('sensores')){
+      const lines = sensors.map(s => `• ${s.name}: ${s.reading.toFixed(1)} L/min — ${s.status === 'alert' ? 'anomalía detectada' : 'normal'}`).join('\n');
+      return { tag:'Agente Sensor', text:`Estado actual de los ${sensors.length} sensores conectados:\n${lines}` };
+    }
+
+    if(q.includes('ahorro')){
+      return { tag:'Agente Coordinador', text:'El ahorro estimado este mes es de S/ 86, comparado con tu consumo histórico promedio. Este cálculo mejora a medida que se resuelven las fugas detectadas.' };
+    }
+
+    if(q.includes('sensibilidad') || q.includes('umbral')){
+      return { tag:'Agente Detección', text:`La sensibilidad de detección está en ${sensitivity}%. Un valor más alto detecta anomalías más pequeñas, pero puede generar más falsas alarmas. Puedes probar otros valores en "Simulador" antes de aplicarlos.` };
+    }
+
+    if(q.includes('agente') || q.includes('cómo funciona') || q.includes('como funciona')){
+      return { tag:'Agente Coordinador', text:'El sistema es multiagente: yo (Coordinador) delego en el Agente Sensor (lee caudal y presión), el Agente Detección (calcula el riesgo de fuga), el Agente Predictivo (proyecta el consumo) y el Agente Ejecutor, que solo PROPONE acciones: una persona las aprueba. Puedes ver sus herramientas y las trazas reales en la pestaña de agentes.' };
+    }
+
+    if(q.includes('soporte') || q.includes('humano') || q.includes('hablar con alguien') || q.includes('asesor')){
+      return { tag:'Coordinador', text:'Te conecto con el equipo técnico. Mientras te contactan, sigo disponible para resolver consultas sobre sensores, alertas o predicciones.' };
+    }
+
+    return { tag:'Agente Coordinador', text:'Puedo ayudarte con el estado de tus sensores, las fugas detectadas hoy, las acciones pendientes de aprobar, la predicción de consumo, el historial de decisiones o el ahorro estimado. ¿Sobre cuál te gustaría saber más?' };
+  }
+
+  /* ---------------- Chat → sistema multiagente del servidor ---------------- */
+  const SESION_ID = 'ses-' + Math.random().toString(36).slice(2, 10) + Date.now().toString(36);
+
+  function escHtml(v){
+    return String(v).replace(/[&<>"']/g, c => ({ '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]));
+  }
+
+  function addMsgSafe(text, tag, extraHtml){
+    const div = document.createElement('div');
+    div.className = 'msg msg-bot';
+    div.innerHTML = `<span class="msg-agent-tag">${escHtml(tag)}</span>${escHtml(text).replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}${extraHtml || ''}`;
+    chatBody.appendChild(div);
+    chatBody.scrollTop = chatBody.scrollHeight;
+  }
+
+  // Lo único que se envía al servidor: lecturas actuales de los sensores (datos simulados).
+  function snapshotSensores(){
+    return sensors.map(s => ({
+      id: s.id, nombre: s.name,
+      caudal: Number((s.reading ?? s.base).toFixed(2)),
+      presion: Number((s.presion ?? s.presionBase).toFixed(2)),
+      base: s.base, presionBase: s.presionBase, umbral: s.umbral, valvulaCerrada: false
+    }));
+  }
+
+  async function askAgentes(question){
+    const res = await fetch(DB_API_BASE + '/agentes/solicitud', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ mensaje: question, sesionId: SESION_ID, contexto: { sensores: snapshotSensores() } })
+    });
+    const data = await res.json().catch(() => ({}));
+    if(!res.ok) throw new Error(data.error || ('Error ' + res.status));
+    return data;
+  }
+
+  // Las propuestas del Agente Ejecutor entran a la misma bandeja de aprobación humana de siempre.
+  function importarPropuestas(lista){
+    (lista || []).forEach(p => {
+      if(pendingActions.some(x => x.serverId === p.id)) return;
+      // Si la simulación local ya había creado la misma propuesta, se adopta en lugar de duplicarla.
+      const local = pendingActions.find(x => !x.serverId && x.status === 'pendiente' && x.sensorName === p.sensorNombre && x.tipo === p.tipoEtiqueta);
+      if(local){ local.serverId = p.id; local.detalle = p.detalle; local.prioridad = p.prioridad; return; }
+      const alert = alerts.find(a => a.sensorName === p.sensorNombre && !a.resolved);
+      actionSeq++;
+      pendingActions.unshift({ id: actionSeq, serverId: p.id, sensorName: p.sensorNombre, alertId: alert ? alert.id : null,
+        tipo: p.tipoEtiqueta, prioridad: p.prioridad, detalle: p.detalle, valvula: p.tipo === 'cerrar_valvula',
+        status:'pendiente', modified:false, createdAt: new Date() });
+    });
+    renderActions();
+  }
+
+  function fmtEvento(e){
+    switch(e.tipo){
+      case 'entrada': return 'Entrada del usuario: ' + e.mensaje;
+      case 'sospecha_inyeccion': return '⚠ Posible inyección de instrucciones (' + e.patrones.join(', ') + '). ' + e.medida;
+      case 'llm': return 'LLM de ' + e.agente + ' (' + e.modelo + ', ' + e.ms + ' ms, ' + e.tokens.in + '→' + e.tokens.out + ' tokens)' + (e.herramientas_solicitadas && e.herramientas_solicitadas.length ? ' solicita: ' + e.herramientas_solicitadas.join(', ') : '');
+      case 'delegacion': return 'Delegación ' + e.de + ' → ' + e.a + ': ' + e.tarea;
+      case 'herramienta': return 'Herramienta ' + e.agente + '.' + e.herramienta + '(' + e.args + ') → ' + e.resultado;
+      case 'mensaje_agente': return 'Mensaje ' + e.de + ' → ' + e.a + ': ' + e.contenido;
+      case 'bloqueo': return '⛔ Bloqueo (' + e.motivo + ')';
+      case 'limite': return '⛔ Límite alcanzado: ' + (e.cual || '');
+      case 'reintento_formato': return 'Reintento de formato en ' + e.agente;
+      case 'respuesta_final': return 'Respuesta final: ' + e.contenido;
+      default: return e.tipo + ' ' + JSON.stringify(e);
+    }
+  }
+
+  async function refreshTrazas(){
+    const el = document.getElementById('trazasList');
+    if(!el) return;
+    const lista = await dbFetch('/agentes/trazas?limit=6&completo=1');
+    if(!lista){ el.innerHTML = '<p class="hint">Sin conexión con el servidor de agentes.</p>'; return; }
+    if(!lista.length){ el.innerHTML = '<p class="hint">Aún no hay consultas. Escribe algo en el chat.</p>'; return; }
+    el.innerHTML = lista.map(t => `<details style="margin-bottom:8px"><summary><b>#${escHtml(t.id)}</b> · ${escHtml(t.agentes.join(' → '))} · ${(t.ms/1000).toFixed(1)} s${t.abortado ? ' · abortado: ' + escHtml(t.abortado) : ''}<br><span class="hint">“${escHtml(t.mensaje)}”</span></summary><pre style="white-space:pre-wrap;font-size:11px;line-height:1.5;margin:6px 0 0">${escHtml(t.eventos.map(e => '[+' + e.tMs + ' ms] ' + fmtEvento(e)).join('\n'))}</pre></details>`).join('');
+  }
+  document.getElementById('btnRefrescarTrazas').addEventListener('click', refreshTrazas);
+
+  async function handleUserQuestion(text){
+    if(!text.trim()) return;
+    addMsg(text, 'user');
+    chatInput.value = '';
+    const sendBtn = document.getElementById('chatSend');
+    sendBtn.disabled = true;
+    const loading = document.createElement('div');
+    loading.className = 'msg msg-bot';
+    loading.innerHTML = '<span class="msg-agent-tag">Coordinador · multiagente</span>Coordinando a los agentes…';
+    chatBody.appendChild(loading);
+    chatBody.scrollTop = chatBody.scrollHeight;
+
+    try {
+      const data = await askAgentes(text);
+      loading.remove();
+      const resumen = data.agentes.join(' → ') + ' · ' + data.llamadasLlm + ' llamadas al modelo · ' + (data.ms/1000).toFixed(1) + ' s · traza #' + data.id + (data.modo === 'mock' ? ' · MODO SIMULADO' : '') + (data.abortado ? ' · abortado: ' + data.abortado : '');
+      addMsgSafe(data.respuesta, 'Coordinador · multiagente', '<span style="display:block;margin-top:6px;font-size:11px;opacity:.7">' + escHtml(resumen) + '</span>');
+      data.eventos.filter(e => e.tipo === 'delegacion').forEach(e => logActivity(e.a, 'Recibió una tarea del Coordinador', e.tarea.length > 60 ? e.tarea.slice(0,60) + '…' : e.tarea));
+      logActivity('Coordinador', 'Respondió consulta', `"${text.length > 40 ? text.slice(0,40)+'…' : text}"`);
+      importarPropuestas(data.accionesPropuestas);
+      refreshTrazas();
+    } catch(error) {
+      loading.remove();
+      const fallback = answerFor(text);
+      addMsg(`${fallback.text}\n\n[Servidor de agentes no disponible: ${error.message}. Respuesta del modo local.]`, 'bot', fallback.tag);
+      logActivity(fallback.tag, 'Respondió consulta (modo local)', `"${text.length > 40 ? text.slice(0,40)+'…' : text}"`);
+    } finally {
+      sendBtn.disabled = false;
+      chatInput.focus();
+    }
+  }
+
+  document.getElementById('chatSend').addEventListener('click', () => handleUserQuestion(chatInput.value));
+  chatInput.addEventListener('keydown', (e) => { if(e.key === 'Enter') handleUserQuestion(chatInput.value); });
+  document.getElementById('quickRow').addEventListener('click', (e) => {
+    if(e.target.classList.contains('quick-btn')) handleUserQuestion(e.target.dataset.q);
+  });
+
+  addMsg('Hola, soy el asistente de AquaSense IA. Pregúntame por tus sensores, fugas del día, ahorro estimado o cómo funcionan los agentes del sistema.', 'bot', 'Agente Coordinador');
+
+  const webQuickButtons = [
+    { q:'¿Hay alguna fuga activa ahora mismo?', label:'¿Hay alguna fuga activa?' },
+    { q:'¿Cuántas fugas se detectaron hoy?', label:'Fugas detectadas hoy' },
+    { q:'¿Cómo están mis sensores?', label:'Estado de sensores' },
+    { q:'¿Cómo funcionan los agentes del sistema?', label:'¿Cómo funcionan los agentes?' },
+    { q:'¿Qué acciones están pendientes de aprobar?', label:'Acciones pendientes' },
+    { q:'¿Cuál es la predicción de consumo?', label:'Predicción de consumo' },
+    { q:'¿Qué sensor tiene más riesgo?', label:'Sensor con más riesgo' },
+    { q:'¿Cuánto ahorro llevo?', label:'Ahorro estimado' },
+  ];
+  const waQuickButtons = [
+    { q:'¿Hay alguna fuga activa ahora mismo?', label:'¿Hay una fuga activa?' },
+    { q:'¿Qué acciones están pendientes de aprobar?', label:'Ver acciones pendientes' },
+    { q:'Cerrar válvula de Cocina', label:'Cerrar válvula de Cocina' },
+    { q:'¿Cómo están mis sensores?', label:'Estado de sensores' },
+    { q:'Quiero hablar con soporte humano', label:'Hablar con soporte' },
+  ];
+  function renderQuickButtons(list){
+    document.getElementById('quickRow').innerHTML = list.map(b => `<button class="quick-btn" data-q="${b.q.replace(/"/g,'&quot;')}">${b.label}</button>`).join('');
+  }
+  renderQuickButtons(webQuickButtons);
+
+  /* ---------------- Canal WhatsApp (vista previa) ---------------- */
+  let waMode = false;
+  const chatPanel = document.getElementById('chatPanel');
+  const chatSubtitle = document.getElementById('chatSubtitle');
+  document.getElementById('btnChannelWeb').addEventListener('click', () => setChannel(false));
+  document.getElementById('btnChannelWa').addEventListener('click', () => setChannel(true));
+  function setChannel(wa){
+    waMode = wa;
+    document.getElementById('btnChannelWeb').classList.toggle('active', !wa);
+    document.getElementById('btnChannelWa').classList.toggle('active', wa);
+    chatPanel.classList.toggle('wa-wrap', wa);
+    chatSubtitle.textContent = wa
+      ? 'Vista previa de integración con WhatsApp Business — mismo motor de agentes, otro canal. (Roadmap: no conectado a un número real todavía.)'
+      : 'Pregúntale al sistema de agentes por el estado de tus sensores, las fugas del día o el ahorro estimado.';
+    document.querySelectorAll('#chatBody .msg').forEach(m => m.classList.toggle('wa', wa));
+    renderQuickButtons(wa ? waQuickButtons : webQuickButtons);
+  }
+
+  /* ---------------- Acciones pendientes ---------------- */
+  let pendingActions = [];
+  let actionSeq = 0;
+  let decisionHistory = [];
+
+  function logDecision(sensorName, evento, decididoPor, resultado){
+    decisionHistory.unshift({ time: new Date(), sensorName, evento, decididoPor, resultado });
+    if(decisionHistory.length > 200) decisionHistory.pop();
+    renderHistory();
+    dbFetch('/historial', { method:'POST', body: JSON.stringify({ sensorNombre: sensorName, evento, decididoPor, resultado }) });
+  }
+
+  function proposeActions(alert){
+    const items = [
+      { tipo:'Cerrar válvula de suministro', prioridad:'alta', detalle:`Cerrar el paso de agua en "${alert.sensorName}" mientras se confirma la fuga.`, valvula:true },
+      { tipo:'Notificar a la EPS', prioridad:'media', detalle:`Reportar la anomalía a la empresa de agua para revisar la red externa.` },
+    ];
+    if(Math.random() < 0.5){
+      items.push({ tipo:'Programar mantenimiento preventivo', prioridad:'baja', detalle:`Agendar una revisión técnica de "${alert.sensorName}" en los próximos días.` });
+    }
+    items.forEach(it => {
+      actionSeq++;
+      pendingActions.unshift({ id: actionSeq, sensorName: alert.sensorName, alertId: alert.id, tipo: it.tipo, prioridad: it.prioridad, detalle: it.detalle, valvula: !!it.valvula, status:'pendiente', modified:false, createdAt: new Date() });
+      dbFetch('/acciones', { method:'POST', body: JSON.stringify({ sensorNombre: alert.sensorName, tipo: it.tipo, prioridad: it.prioridad, detalle: it.detalle }) });
+    });
+    renderActions();
+  }
+
+  function updateActionsBadge(){
+    const open = pendingActions.filter(a => a.status === 'pendiente').length;
+    const badge = document.getElementById('navActionsBadge');
+    badge.style.display = open ? 'inline-block' : 'none';
+    badge.textContent = open;
+  }
+
+  function actionStatBadge(a){
+    if(a.status === 'pendiente') return a.modified ? '<span class="badge status">Modificada</span>' : '';
+    const map = { aprobada:'Aprobada', pospuesta:'Pospuesta', descartada:'Descartada' };
+    return `<span class="badge status">${map[a.status]}</span>`;
+  }
+
+  function renderActions(){
+    const list = document.getElementById('actionsList');
+    if(!list) return;
+    if(pendingActions.length === 0){
+      list.innerHTML = '<div class="hint">No hay propuestas por ahora. Simula una fuga para ver el flujo de aprobación.</div>';
+    } else {
+      list.innerHTML = pendingActions.map(a => `
+        <div class="action-card ${a.status !== 'pendiente' ? 'done' : ''}">
+          <div class="action-top">
+            <div class="action-title">${a.tipo} <span class="badge ${a.prioridad}">${a.prioridad.charAt(0).toUpperCase()+a.prioridad.slice(1)}</span> ${actionStatBadge(a)}</div>
+          </div>
+          <div class="action-detail">Sensor: <b>${a.sensorName}</b> · ${a.detalle}</div>
+          ${a.status === 'pendiente' ? `
+          <div class="action-actions">
+            <button class="btn btn-primary btn-act-approve" data-id="${a.id}">Aprobar</button>
+            <button class="btn btn-ghost btn-act-modify" data-id="${a.id}">Modificar prioridad</button>
+            <button class="btn btn-ghost btn-act-postpone" data-id="${a.id}">Posponer</button>
+            <button class="btn btn-ghost btn-act-discard" data-id="${a.id}">Descartar</button>
+          </div>` : ''}
+        </div>`).join('');
+    }
+    updateActionsBadge();
+
+    const openActions = pendingActions.filter(a => a.status === 'pendiente').length;
+    const approvedActions = pendingActions.filter(a => a.status === 'aprobada').length;
+    const litersProtected = approvedActions * 40;
+    const costAvoided = (litersProtected * 0.008).toFixed(1);
+    document.getElementById('statOpenActions').textContent = openActions;
+    document.getElementById('statApprovedActions').textContent = approvedActions;
+    document.getElementById('statLitersProtected').textContent = litersProtected + ' L';
+    document.getElementById('statCostAvoided').textContent = 'S/ ' + costAvoided;
+    renderReports();
+  }
+
+  document.getElementById('actionsList').addEventListener('click', (e) => {
+    const id = Number(e.target.dataset.id);
+    if(!id) return;
+    const a = pendingActions.find(x => x.id === id);
+    if(!a) return;
+
+    if(e.target.classList.contains('btn-act-approve')){
+      a.status = 'aprobada';
+      if(a.valvula){
+        const alert = alerts.find(x => x.id === a.alertId);
+        if(alert && !alert.resolved) closeValve(alert, false);
+      }
+      logActivity('Agente Ejecutor', 'Acción aprobada', `"${a.tipo}" en "${a.sensorName}".`);
+      logDecision(a.sensorName, a.tipo, 'Manual (usuario)', 'Aprobada');
+      showToast('Acción aprobada: ' + a.tipo);
+    } else if(e.target.classList.contains('btn-act-modify')){
+      const order = ['alta','media','baja'];
+      a.prioridad = order[(order.indexOf(a.prioridad)+1) % order.length];
+      a.modified = true;
+      showToast('Prioridad actualizada a ' + a.prioridad);
+    } else if(e.target.classList.contains('btn-act-postpone')){
+      a.status = 'pospuesta';
+      logDecision(a.sensorName, a.tipo, 'Manual (usuario)', 'Pospuesta');
+      showToast('Acción pospuesta');
+    } else if(e.target.classList.contains('btn-act-discard')){
+      a.status = 'descartada';
+      logDecision(a.sensorName, a.tipo, 'Manual (usuario)', 'Descartada');
+      showToast('Acción descartada');
+    }
+    if(a.serverId && a.status !== 'pendiente'){
+      const verbo = { aprobada:'aprobar', pospuesta:'posponer', descartada:'descartar' }[a.status];
+      if(verbo) dbFetch('/agentes/acciones/' + a.serverId + '/' + verbo, { method:'POST', body:'{}' }).then(refreshTrazas);
+    }
+    renderActions();
+  });
+
+  /* ---------------- Historial de decisiones ---------------- */
+  const filterSensorEl = document.getElementById('filterSensor');
+  function refreshSensorFilterOptions(){
+    const current = filterSensorEl.value;
+    filterSensorEl.innerHTML = '<option value="todos">Todos los sensores</option>';
+    sensors.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.name; opt.textContent = s.name;
+      filterSensorEl.appendChild(opt);
+    });
+    if([...filterSensorEl.options].some(o => o.value === current)) filterSensorEl.value = current;
+  }
+  refreshSensorFilterOptions();
+  document.getElementById('filterOrigen').addEventListener('change', renderHistory);
+  filterSensorEl.addEventListener('change', renderHistory);
+
+  function renderHistory(){
+    const body = document.getElementById('historyTableBody');
+    if(!body) return;
+    const fSensor = filterSensorEl.value;
+    const fOrigen = document.getElementById('filterOrigen').value;
+    let rows = decisionHistory.filter(d => {
+      if(fSensor !== 'todos' && d.sensorName !== fSensor) return false;
+      const esAuto = d.decididoPor.toLowerCase().includes('automático');
+      if(fOrigen === 'automatico' && !esAuto) return false;
+      if(fOrigen === 'manual' && esAuto) return false;
+      return true;
+    });
+    body.innerHTML = rows.slice(0,100).map(d => `
+      <tr>
+        <td>${d.time.toLocaleTimeString('es-PE',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}</td>
+        <td>${d.sensorName}</td>
+        <td>${d.evento}</td>
+        <td>${d.decididoPor}</td>
+        <td>${d.resultado}</td>
+      </tr>`).join('') || '<tr><td colspan="5" class="hint">Sin registros con estos filtros todavía.</td></tr>';
+  }
+
+  /* ---------------- Reportes ---------------- */
+  function renderReports(){
+    const rl = document.getElementById('repLeaks');
+    if(!rl) return;
+    const approvedActions = pendingActions.filter(a => a.status === 'aprobada').length;
+    const waterSaved = approvedActions * 40;
+    const costAvoided = (waterSaved * 0.008).toFixed(1);
+    const counts = {};
+    decisionHistory.forEach(d => { if(d.evento.includes('detectada')) counts[d.sensorName] = (counts[d.sensorName]||0)+1; });
+    let top = '—', topN = 0;
+    Object.entries(counts).forEach(([k,v]) => { if(v > topN){ top = k; topN = v; } });
+
+    rl.textContent = totalLeaksToday;
+    document.getElementById('repWaterSaved').textContent = waterSaved + ' L';
+    document.getElementById('repCostAvoided').textContent = 'S/ ' + costAvoided;
+    document.getElementById('repTopSensor').textContent = topN > 0 ? `${top} (${topN})` : '—';
+  }
+
+  document.getElementById('btnDownloadReport').addEventListener('click', () => {
+    let csv = 'Fecha,Sensor,Evento,Decidido por,Resultado\n';
+    decisionHistory.forEach(d => {
+      csv += `${d.time.toLocaleString('es-PE')},${d.sensorName},"${d.evento}",${d.decididoPor},${d.resultado}\n`;
+    });
+    const blob = new Blob([csv], { type:'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'reporte_aquasense.csv';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast('Reporte descargado');
+  });
+
+  document.getElementById('btnDownloadPdf').addEventListener('click', () => {
+    const now = new Date();
+    const fecha = now.toLocaleDateString('es-PE', { day:'2-digit', month:'long', year:'numeric' }) +
+                  ' · ' + now.toLocaleTimeString('es-PE', { hour:'2-digit', minute:'2-digit' });
+
+    const leaks = document.getElementById('repLeaks').textContent;
+    const waterSaved = document.getElementById('repWaterSaved').textContent;
+    const costAvoided = document.getElementById('repCostAvoided').textContent;
+    const topSensor = document.getElementById('repTopSensor').textContent;
+
+    const sensorRows = sensors.map(s => `
+      <tr>
+        <td>${s.name}</td>
+        <td>${s.reading.toFixed(1)} L/min</td>
+        <td>${s.presion.toFixed(1)} bar</td>
+        <td>${s.status === 'alert' ? 'Anomalía activa' : 'Normal'}</td>
+      </tr>`).join('');
+
+    const historyRows = decisionHistory.slice(0,20).map(d => `
+      <tr>
+        <td>${d.time.toLocaleString('es-PE',{day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</td>
+        <td>${d.sensorName}</td>
+        <td>${d.evento}</td>
+        <td>${d.decididoPor}</td>
+        <td>${d.resultado}</td>
+      </tr>`).join('') || '<tr><td colspan="5">Sin registros en esta sesión.</td></tr>';
+
+    document.getElementById('printArea').innerHTML = `
+      <div class="pr-header">
+        <div>
+          <h1>AquaSense IA — Reporte de actividad</h1>
+          <p>Plataforma Inteligente para la Detección de Fugas y Optimización del Consumo de Agua</p>
+        </div>
+        <p>Generado el ${fecha}</p>
+      </div>
+
+      <div class="pr-grid">
+        <div class="pr-card"><div class="v">${leaks}</div><div class="l">Fugas detectadas</div></div>
+        <div class="pr-card"><div class="v">${waterSaved}</div><div class="l">Agua ahorrada estimada</div></div>
+        <div class="pr-card"><div class="v">${costAvoided}</div><div class="l">Costo evitado estimado</div></div>
+        <div class="pr-card"><div class="v" style="font-size:13px;">${topSensor}</div><div class="l">Sensor con más incidencias</div></div>
+      </div>
+
+      <div class="pr-section-title">Estado de sensores</div>
+      <table class="pr-table">
+        <thead><tr><th>Sensor</th><th>Consumo</th><th>Presión</th><th>Estado</th></tr></thead>
+        <tbody>${sensorRows}</tbody>
+      </table>
+
+      <div class="pr-section-title">Historial de decisiones (últimos 20 eventos)</div>
+      <table class="pr-table">
+        <thead><tr><th>Fecha</th><th>Sensor</th><th>Evento</th><th>Decidido por</th><th>Resultado</th></tr></thead>
+        <tbody>${historyRows}</tbody>
+      </table>
+
+      <div class="pr-footer">Datos simulados con fines demostrativos — AquaSense IA · Equipo de Innovación. Sensibilidad configurada: ${sensitivity}%.</div>
+    `;
+
+    showToast('Se abrirá el diálogo de impresión — elige "Guardar como PDF"');
+    setTimeout(() => window.print(), 300);
+  });
+
+  document.getElementById('btnSendGmail').addEventListener('click', () => {
+    const to = document.getElementById('reportEmailTo').value.trim();
+    if(!to || !to.includes('@')){
+      showToast('Ingresa un correo de destino válido');
+      return;
+    }
+    const now = new Date();
+    const fecha = now.toLocaleDateString('es-PE', { day:'2-digit', month:'long', year:'numeric' });
+    const leaks = document.getElementById('repLeaks').textContent;
+    const waterSaved = document.getElementById('repWaterSaved').textContent;
+    const costAvoided = document.getElementById('repCostAvoided').textContent;
+    const topSensor = document.getElementById('repTopSensor').textContent;
+
+    const subject = `Reporte AquaSense IA — ${fecha}`;
+    const body =
+`Hola,
+
+Adjunto el reporte de actividad de AquaSense IA generado el ${fecha}.
+
+Resumen del periodo:
+- Fugas detectadas: ${leaks}
+- Agua ahorrada estimada: ${waterSaved}
+- Costo evitado estimado: ${costAvoided}
+- Sensor con más incidencias: ${topSensor}
+
+(Recuerda adjuntar el PDF que descargaste antes de enviar este correo.)
+
+Saludos,
+Equipo de Innovación — AquaSense IA`;
+
+    const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(to)}&su=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+    window.open(gmailUrl, '_blank');
+    showToast('Abriendo Gmail — no olvides adjuntar el PDF');
+  });
+
+  /* ---------------- Predicción (página completa) ---------------- */
+  let predHorizon = 7;
+  document.querySelectorAll('.horizon-tabs button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.horizon-tabs button').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      predHorizon = Number(btn.dataset.horizon);
+      renderPredictionPage();
+    });
+  });
+
+  function renderPredictionPage(){
+    const body = document.getElementById('predTableBody');
+    if(!body) return;
+    let totalProjected = 0, riskiest = null, riskiestPct = -Infinity;
+    const rows = sensors.map(s => {
+      const trendPct = ((s.reading - s.base) / Math.max(s.base,0.2)) * 100;
+      const projected = Math.max(0, s.reading * (1 + (trendPct/100) * (predHorizon/7)));
+      totalProjected += projected;
+      if(trendPct > riskiestPct){ riskiestPct = trendPct; riskiest = s.name; }
+      const riesgo = trendPct > 20 ? ['Alto','var(--coral)'] : trendPct > 8 ? ['Medio','var(--gold)'] : ['Bajo','var(--teal)'];
+      return `<tr>
+        <td>${s.name}</td>
+        <td>${s.reading.toFixed(1)} L/min</td>
+        <td>${projected.toFixed(1)} L/min</td>
+        <td style="color:${trendPct>=0?'var(--coral)':'var(--teal)'}">${trendPct>=0?'+':''}${trendPct.toFixed(1)}%</td>
+        <td style="color:${riesgo[1]}">${riesgo[0]}</td>
+      </tr>`;
+    });
+    body.innerHTML = rows.join('');
+    document.getElementById('predTotalValue').textContent = totalProjected.toFixed(1) + ' L/min';
+    document.getElementById('predAccuracy').textContent = 'n/d (proyección demostrativa, sin métrica medida)';
+    document.getElementById('predRiskSensor').textContent = riskiest || '—';
+  }
+
+  /* ---------------- Simulador ---------------- */
+  const simHistory = Array.from({length:30}, () => Math.random() < 0.15 ? 55 + Math.random()*40 : Math.random()*50);
+  function thresholdFor(s){ return 95 - s*0.7; }
+  const simSlider = document.getElementById('simSlider');
+  const simSliderValue = document.getElementById('simSliderValue');
+  simSlider.addEventListener('input', () => {
+    simSliderValue.textContent = simSlider.value;
+    renderSimulator();
+  });
+  document.getElementById('btnApplySim').addEventListener('click', () => {
+    sensitivity = Number(simSlider.value);
+    sensSlider.value = sensitivity;
+    sensValue.textContent = sensitivity + '%';
+    logActivity('Coordinador', 'Sensibilidad actualizada', `Nuevo umbral: ${sensitivity}% (aplicado desde el Simulador).`);
+    showToast('Sensibilidad aplicada: ' + sensitivity + '%');
+    renderSimulator();
+  });
+
+  function renderSimulator(){
+    const testVal = Number(simSlider.value);
+    const testThreshold = thresholdFor(testVal);
+    const currentThreshold = thresholdFor(sensitivity);
+    const barsEl = document.getElementById('simBars');
+    barsEl.innerHTML = simHistory.map(score => {
+      const isAlert = score > testThreshold;
+      const h = Math.max(3, (score/100)*120);
+      return `<div class="sim-bar" style="height:${h}px; background:${isAlert ? 'var(--coral)' : 'var(--teal)'}; opacity:${isAlert?0.9:0.45}"></div>`;
+    }).join('');
+    const simCount = simHistory.filter(v => v > testThreshold).length;
+    const curCount = simHistory.filter(v => v > currentThreshold).length;
+    document.getElementById('simAlertsCount').textContent = simCount;
+    document.getElementById('simCurrentCount').textContent = curCount;
+    const diff = simCount - curCount;
+    document.getElementById('simDiff').textContent = (diff >= 0 ? '+' : '') + diff;
+  }
+
+  /* ---------------- Panel Admin ---------------- */
+  let sensorAddSeq = 0;
+  function renderAdmin(){
+    const list = document.getElementById('adminSensorList');
+    if(!list) return;
+    list.innerHTML = sensors.map(s => `
+      <div class="admin-row">
+        <input type="text" data-field="name" data-id="${s.id}" value="${s.name}">
+        <input type="number" data-field="base" data-id="${s.id}" value="${s.base}" step="0.1" min="0">
+        <input type="number" data-field="presionBase" data-id="${s.id}" value="${s.presionBase}" step="0.1" min="0">
+        <input type="number" data-field="umbral" data-id="${s.id}" value="${s.umbral}" min="0" max="100">
+        <button class="btn btn-ghost btn-remove-sensor" data-id="${s.id}" ${sensors.length<=1?'disabled':''}>Eliminar</button>
+      </div>`).join('');
+  }
+
+  document.getElementById('adminSensorList').addEventListener('change', (e) => {
+    const id = e.target.dataset.id, field = e.target.dataset.field;
+    if(!id || !field) return;
+    const s = sensors.find(x => x.id === id);
+    if(!s) return;
+    if(field === 'name'){ s.name = e.target.value.trim() || s.name; refreshSensorFilterOptions(); }
+    else if(field === 'base'){ s.base = Math.max(0, Number(e.target.value) || 0); }
+    else if(field === 'presionBase'){ s.presionBase = Math.max(0, Number(e.target.value) || 0); }
+    else if(field === 'umbral'){ s.umbral = Math.min(100, Math.max(0, Number(e.target.value) || 0)); }
+    renderSensors(); renderAdmin();
+    dbFetch('/sensores/' + encodeURIComponent(s.id), { method:'PUT', body: JSON.stringify({ nombre:s.name, consumoBase:s.base, presionBase:s.presionBase, umbral:s.umbral, estado:s.status }) });
+    showToast('Sensor actualizado: ' + s.name);
+  });
+
+  document.getElementById('adminSensorList').addEventListener('click', (e) => {
+    if(!e.target.classList.contains('btn-remove-sensor')) return;
+    const id = e.target.dataset.id;
+    if(sensors.length <= 1) return;
+    const s = sensors.find(x => x.id === id);
+    sensors.splice(sensors.findIndex(x => x.id === id), 1);
+    renderSensors(); renderAdmin(); refreshSensorFilterOptions();
+    logActivity('Coordinador', 'Sensor retirado', `"${s.name}" fue eliminado del monitoreo desde el Panel Admin.`);
+    dbFetch('/sensores/' + encodeURIComponent(id), { method:'DELETE' });
+    showToast('Sensor eliminado: ' + s.name);
+  });
+
+  document.getElementById('btnAddSensor').addEventListener('click', () => {
+    const name = document.getElementById('adminNewName').value.trim();
+    const base = Number(document.getElementById('adminNewBase').value);
+    const presionBase = Number(document.getElementById('adminNewPresion').value);
+    const umbral = Number(document.getElementById('adminNewUmbral').value) || 70;
+    if(!name || !base || base <= 0){ showToast('Ingresa un nombre y un consumo base válido'); return; }
+    sensorAddSeq++;
+    const newId = 'custom'+sensorAddSeq;
+    sensors.push({ id:newId, name, base, presionBase: presionBase || base*2, umbral: Math.min(100,Math.max(0,umbral)), status:'ok', reading:base, presion: presionBase || base*2 });
+    document.getElementById('adminNewName').value = '';
+    document.getElementById('adminNewBase').value = '';
+    document.getElementById('adminNewPresion').value = '';
+    document.getElementById('adminNewUmbral').value = '70';
+    renderSensors(); renderAdmin(); refreshSensorFilterOptions();
+    logActivity('Coordinador', 'Sensor agregado', `"${name}" se sumó al monitoreo desde el Panel Admin.`);
+    dbFetch('/sensores', { method:'POST', body: JSON.stringify({ id:newId, nombre:name, consumoBase:base, presionBase: presionBase || base*2, umbral }) });
+    showToast('Sensor agregado: ' + name);
+  });
+
+  /* ---------------- Init ---------------- */
+  checkDbConnection();
+  refreshTrazas();
+  sensors.forEach(s => { s.reading = s.base; s.presion = s.presionBase; });
+  renderSensors();
+  renderAlerts();
+  renderAgents();
+  resizeCanvas();
+  drawChart();
+  pushCorrelationSamples();
+  updatePrediction();
+  renderPredictionPage();
+  renderSimulator();
+  renderActions();
+  renderHistory();
+  renderReports();
+  renderAdmin();
+  logActivity('Coordinador', 'Sesión iniciada', `Monitoreando ${sensors.length} sensores con sensibilidad al ${sensitivity}%.`);
+  window.addEventListener('resize', () => { resizeCanvas(); drawChart(); drawBarChart(); drawScatterChart(); });
+
+  setInterval(tickSimulation, 1000);
+
+  // Seed one example resolved alert so the Alerts view isn't empty on first load
+  setTimeout(() => {
+    alertSeq++;
+    alerts.push({ id: alertSeq, sensorName:'Riego de jardín', confidence:88, time: new Date(Date.now()-1000*60*47), resolved:true });
+    renderAlerts();
+    updateAlertBadge();
+  }, 300);
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,14 @@
+# Dependencias y secretos
+node_modules/
+.env
+.env.*
+!.env.example
+
+# Logs y temporales
+*.log
+npm-debug.log*
+.DS_Store
+Thumbs.db
+
+# Restos de la versión anterior (Netlify)
+.netlify/

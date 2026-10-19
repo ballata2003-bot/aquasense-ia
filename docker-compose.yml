@@ -1,0 +1,31 @@
+# Uso básico (solo la app, almacenamiento en memoria):
+#   cp .env.example .env      # y completa GROQ_API_KEY
+#   docker compose up --build
+#   → http://localhost:3001   ·   salud: http://localhost:3001/health
+#
+# Con SQL Server 2022 opcional (persistencia de trazas y decisiones):
+#   docker compose --profile sqlserver up --build
+#   Luego ejecuta server/schema.sql una vez (SSMS o sqlcmd) y define en .env:
+#   STORAGE=sqlserver, DB_SERVER=db, DB_USER=sa, DB_PASSWORD=<la de MSSQL_SA_PASSWORD>
+services:
+  app:
+    build: .
+    ports:
+      - "${PORT:-3001}:${PORT:-3001}"
+    env_file:
+      - .env
+    restart: unless-stopped
+
+  db:
+    profiles: ["sqlserver"]
+    image: mcr.microsoft.com/mssql/server:2022-latest
+    environment:
+      ACCEPT_EULA: "Y"
+      MSSQL_SA_PASSWORD: "${MSSQL_SA_PASSWORD:?define MSSQL_SA_PASSWORD en .env}"
+    ports:
+      - "1433:1433"
+    volumes:
+      - sqldata:/var/opt/mssql
+
+volumes:
+  sqldata:

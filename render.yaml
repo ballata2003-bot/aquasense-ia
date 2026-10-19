@@ -1,0 +1,15 @@
+# Blueprint de Render (https://render.com): despliegue con Docker desde GitHub. NO probado por el autor.
+# La clave GROQ_API_KEY se define en el panel de Render (sync: false), nunca en este archivo.
+services:
+  - type: web
+    name: aquasense-ia
+    runtime: docker
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: LLM_MODE
+        value: groq
+      - key: GROQ_API_KEY
+        sync: false
+      - key: STORAGE
+        value: memory

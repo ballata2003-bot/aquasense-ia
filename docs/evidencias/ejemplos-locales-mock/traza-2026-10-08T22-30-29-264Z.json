@@ -1,0 +1,316 @@
+{
+  "id": "2f59ab0e",
+  "fecha": "2026-10-08T22:30:29.262Z",
+  "mensaje": "¿Hay alguna fuga activa ahora mismo?",
+  "respuesta": "Se leyeron 4 sensores: Medidor general 6.19 L/min; Cocina 6.63 L/min; Baño principal 0.67 L/min; Riego de jardín 2.45 L/min. Fuga confirmada en: cocina. Se registraron 2 propuesta(s) PENDIENTES de aprobación humana.",
+  "agentes": [
+    "Coordinador",
+    "Agente Sensor",
+    "Agente Detección",
+    "Agente Ejecutor"
+  ],
+  "accionesPropuestas": [
+    {
+      "id": 13,
+      "sensorId": "cocina",
+      "sensorNombre": "Cocina",
+      "tipo": "cerrar_valvula",
+      "tipoEtiqueta": "Cerrar válvula de suministro",
+      "prioridad": "alta",
+      "detalle": "Cerrar el paso de agua en cocina mientras se confirma la fuga.",
+      "estado": "pendiente",
+      "creadaPor": "Agente Ejecutor",
+      "trazaId": "2f59ab0e",
+      "fecha": "2026-10-08T22:30:29.262Z",
+      "decididaPor": null,
+      "fechaDecision": null
+    },
+    {
+      "id": 14,
+      "sensorId": "cocina",
+      "sensorNombre": "Cocina",
+      "tipo": "notificar_eps",
+      "tipoEtiqueta": "Notificar a la EPS",
+      "prioridad": "media",
+      "detalle": "Reportar la anomalía en cocina a la EPS.",
+      "estado": "pendiente",
+      "creadaPor": "Agente Ejecutor",
+      "trazaId": "2f59ab0e",
+      "fecha": "2026-10-08T22:30:29.262Z",
+      "decididaPor": null,
+      "fechaDecision": null
+    }
+  ],
+  "sospechaInyeccion": [],
+  "abortado": null,
+  "llamadasLlm": 10,
+  "delegaciones": 3,
+  "tokens": {
+    "in": 5183,
+    "out": 829
+  },
+  "costoUsd": 0.000945,
+  "modo": "mock",
+  "fuenteDatos": "simulador_servidor",
+  "ms": 0,
+  "eventos": [
+    {
+      "n": 1,
+      "tMs": 0,
+      "tipo": "entrada",
+      "mensaje": "¿Hay alguna fuga activa ahora mismo?",
+      "sesionId": null
+    },
+    {
+      "n": 2,
+      "tMs": 0,
+      "tipo": "llm",
+      "agente": "Coordinador",
+      "modelo": "mock",
+      "ms": 0,
+      "tokens": {
+        "in": 447,
+        "out": 47
+      },
+      "herramientas_solicitadas": [
+        "delegar_a_agente"
+      ],
+      "contenido": null
+    },
+    {
+      "n": 3,
+      "tMs": 0,
+      "tipo": "delegacion",
+      "de": "Coordinador",
+      "a": "Agente Sensor",
+      "tarea": "Consulta las lecturas actuales de todos los sensores."
+    },
+    {
+      "n": 4,
+      "tMs": 0,
+      "tipo": "llm",
+      "agente": "Agente Sensor",
+      "modelo": "mock",
+      "ms": 0,
+      "tokens": {
+        "in": 203,
+        "out": 25
+      },
+      "herramientas_solicitadas": [
+        "consultarLecturas"
+      ],
+      "contenido": null
+    },
+    {
+      "n": 5,
+      "tMs": 0,
+      "tipo": "herramienta",
+      "agente": "Agente Sensor",
+      "herramienta": "consultarLecturas",
+      "args": "{}",
+      "resultado": "{\"fuente\":\"simulador_servidor\",\"sensores\":[{\"sensorId\":\"general\",\"nombre\":\"Medidor general\",\"caudalLMin\":6.19,\"presionBar\":3.16,\"consumoBaseLMin\":6.2,\"presionBaseBar\":3.1,\"valvulaCerrada\":false},{\"sensorId\":\"cocina\",\"nombre\":\"Cocina\",\"caudalLMin\":6.63,\"presionBar\":3.31,\"consumoBaseLMin\":1.1,\"presionBaseBar\":2.4,\"valvulaCerrada\":false},{\"sensorId\":\"bano\",\"nombre\":\"Baño principal\",\"caudalLMin\":0.67,\"presionBar\":2.19,\"consumoBaseLMin\":0.8,\"presionBaseBar\":2.2,\"valvulaCerrada\":false},{\"sensorId\":\"jardin\",\"nombre\":\"Riego de jardín\",\"caudalLMin\":2.45,\"presionBar\":2.83,\"consumoBaseLMin\":2.4,\"presionBaseBar\":2.8,\"valvulaCerrada\":false}]}",
+      "ms": 0,
+      "error": null
+    },
+    {
+      "n": 6,
+      "tMs": 0,
+      "tipo": "llm",
+      "agente": "Agente Sensor",
+      "modelo": "mock",
+      "ms": 0,
+      "tokens": {
+        "in": 389,
+        "out": 234
+      },
+      "herramientas_solicitadas": [],
+      "contenido": "{\"resumen\":\"Se leyeron 4 sensores: Medidor general 6.19 L/min; Cocina 6.63 L/min; Baño principal 0.67 L/min; Riego de jardín 2.45 L/min.\",\"hallazgos\":[\"general: 6.19 L/min (base 6.2), 3.16 bar\",\"cocina: 6.63 L/min (base 1.1), 3.31 bar\",\"bano: 0.67 L/min (base 0.8), 2.19 bar\",\"jardin: 2.45 L/min (bas…[recortado]"
+    },
+    {
+      "n": 7,
+      "tMs": 0,
+      "tipo": "mensaje_agente",
+      "de": "Agente Sensor",
+      "a": "Coordinador",
+      "contenido": "{\"resumen\":\"Se leyeron 4 sensores: Medidor general 6.19 L/min; Cocina 6.63 L/min; Baño principal 0.67 L/min; Riego de jardín 2.45 L/min.\",\"hallazgos\":[\"general: 6.19 L/min (base 6.2), 3.16 bar\",\"cocina: 6.63 L/min (base 1.1), 3.31 bar\",\"bano: 0.67 L/min (base 0.8), 2.19 bar\",\"jardin: 2.45 L/min (base 2.4), 2.83 bar\"],\"datos\":{\"sensores\":[{\"sensorId\":\"general\",\"nombre\":\"Medidor general\",\"caudalLMin\":6.19,\"presionBar\":3.16,\"consumoBaseLMin\":6.2,\"presionBaseBar\":3.1,\"valvulaCerrada\":false},{\"sensorId\":\"cocina\",\"nombre\":\"Cocina\",\"caudalLMin\":6.63,\"presionBar\":3.31,\"consumoBaseLMin\":1.1,\"presionBaseBar\":2.4,\"valvulaCerrada\":false},{\"sensorId\":\"bano\",\"nombre\":\"Baño principal\",\"caudalLMin\":0.67,\"presionBar\":2.19,\"consumoBaseLMin\":0.8,\"presionBaseBar\":2.2,\"valvulaCerrada\":false},{\"sensorId\":\"jardin\",\"nombre\":\"Riego de jardín\",\"caudalLMin\":2.45,\"presionBar\":2.83,\"consumoBaseLMin\":2.4,\"presionBase…[recortado]"
+    },
+    {
+      "n": 8,
+      "tMs": 0,
+      "tipo": "llm",
+      "agente": "Coordinador",
+      "modelo": "mock",
+      "ms": 0,
+      "tokens": {
+        "in": 741,
+        "out": 54
+      },
+      "herramientas_solicitadas": [
+        "delegar_a_agente"
+      ],
+      "contenido": null
+    },
+    {
+      "n": 9,
+      "tMs": 0,
+      "tipo": "delegacion",
+      "de": "Coordinador",
+      "a": "Agente Detección",
+      "tarea": "Calcula el riesgo de fuga de todos los sensores e indica cuáles se confirman."
+    },
+    {
+      "n": 10,
+      "tMs": 0,
+      "tipo": "llm",
+      "agente": "Agente Detección",
+      "modelo": "mock",
+      "ms": 0,
+      "tokens": {
+        "in": 224,
+        "out": 25
+      },
+      "herramientas_solicitadas": [
+        "calcularRiesgoFuga"
+      ],
+      "contenido": null
+    },
+    {
+      "n": 11,
+      "tMs": 0,
+      "tipo": "herramienta",
+      "agente": "Agente Detección",
+      "herramienta": "calcularRiesgoFuga",
+      "args": "{}",
+      "resultado": "{\"fugas\":[\"cocina\"],\"sensores\":[{\"sensorId\":\"general\",\"nombre\":\"Medidor general\",\"riesgoPct\":0,\"confianzaPct\":0,\"umbralPct\":60,\"fugaConfirmada\":false},{\"sensorId\":\"cocina\",\"nombre\":\"Cocina\",\"riesgoPct\":100,\"confianzaPct\":100,\"umbralPct\":75,\"fugaConfirmada\":true},{\"sensorId\":\"bano\",\"nombre\":\"Baño principal\",\"riesgoPct\":0,\"confianzaPct\":0,\"umbralPct\":65,\"fugaConfirmada\":false},{\"sensorId\":\"jardin\",\"nombre\":\"Riego de jardín\",\"riesgoPct\":2,\"confianzaPct\":2,\"umbralPct\":80,\"fugaConfirmada\":false}]}",
+      "ms": 0,
+      "error": null
+    },
+    {
+      "n": 12,
+      "tMs": 0,
+      "tipo": "llm",
+      "agente": "Agente Detección",
+      "modelo": "mock",
+      "ms": 0,
+      "tokens": {
+        "in": 375,
+        "out": 174
+      },
+      "herramientas_solicitadas": [],
+      "contenido": "{\"resumen\":\"Fuga confirmada en: cocina.\",\"hallazgos\":[\"general: riesgo 0% (umbral 60%)\",\"cocina: riesgo 100% (umbral 75%)\",\"bano: riesgo 0% (umbral 65%)\",\"jardin: riesgo 2% (umbral 80%)\"],\"datos\":{\"fugas\":[\"cocina\"],\"sensores\":[{\"sensorId\":\"general\",\"nombre\":\"Medidor general\",\"riesgoPct\":0,\"confianz…[recortado]"
+    },
+    {
+      "n": 13,
+      "tMs": 0,
+      "tipo": "mensaje_agente",
+      "de": "Agente Detección",
+      "a": "Coordinador",
+      "contenido": "{\"resumen\":\"Fuga confirmada en: cocina.\",\"hallazgos\":[\"general: riesgo 0% (umbral 60%)\",\"cocina: riesgo 100% (umbral 75%)\",\"bano: riesgo 0% (umbral 65%)\",\"jardin: riesgo 2% (umbral 80%)\"],\"datos\":{\"fugas\":[\"cocina\"],\"sensores\":[{\"sensorId\":\"general\",\"nombre\":\"Medidor general\",\"riesgoPct\":0,\"confianzaPct\":0,\"umbralPct\":60,\"fugaConfirmada\":false},{\"sensorId\":\"cocina\",\"nombre\":\"Cocina\",\"riesgoPct\":100,\"confianzaPct\":100,\"umbralPct\":75,\"fugaConfirmada\":true},{\"sensorId\":\"bano\",\"nombre\":\"Baño principal\",\"riesgoPct\":0,\"confianzaPct\":0,\"umbralPct\":65,\"fugaConfirmada\":false},{\"sensorId\":\"jardin\",\"nombre\":\"Riego de jardín\",\"riesgoPct\":2,\"confianzaPct\":2,\"umbralPct\":80,\"fugaConfirmada\":false}]}}"
+    },
+    {
+      "n": 14,
+      "tMs": 0,
+      "tipo": "llm",
+      "agente": "Coordinador",
+      "modelo": "mock",
+      "ms": 0,
+      "tokens": {
+        "in": 983,
+        "out": 55
+      },
+      "herramientas_solicitadas": [
+        "delegar_a_agente"
+      ],
+      "contenido": null
+    },
+    {
+      "n": 15,
+      "tMs": 0,
+      "tipo": "delegacion",
+      "de": "Coordinador",
+      "a": "Agente Ejecutor",
+      "tarea": "Propón acciones (cerrar_valvula alta y notificar_eps media) para: sensorId=cocina."
+    },
+    {
+      "n": 16,
+      "tMs": 0,
+      "tipo": "llm",
+      "agente": "Agente Ejecutor",
+      "modelo": "mock",
+      "ms": 0,
+      "tokens": {
+        "in": 269,
+        "out": 119
+      },
+      "herramientas_solicitadas": [
+        "proponerAccion",
+        "proponerAccion"
+      ],
+      "contenido": null
+    },
+    {
+      "n": 17,
+      "tMs": 0,
+      "tipo": "herramienta",
+      "agente": "Agente Ejecutor",
+      "herramienta": "proponerAccion",
+      "args": "{\"sensorId\":\"cocina\",\"tipo\":\"cerrar_valvula\",\"prioridad\":\"alta\",\"detalle\":\"Cerrar el paso de agua en cocina mientras se confirma la fuga.\"}",
+      "resultado": "{\"ok\":true,\"estado\":\"pendiente\",\"duplicada\":false,\"accionId\":13,\"mensaje\":\"Propuesta registrada como PENDIENTE de aprobación humana.\"}",
+      "ms": 0,
+      "error": null
+    },
+    {
+      "n": 18,
+      "tMs": 0,
+      "tipo": "herramienta",
+      "agente": "Agente Ejecutor",
+      "herramienta": "proponerAccion",
+      "args": "{\"sensorId\":\"cocina\",\"tipo\":\"notificar_eps\",\"prioridad\":\"media\",\"detalle\":\"Reportar la anomalía en cocina a la EPS.\"}",
+      "resultado": "{\"ok\":true,\"estado\":\"pendiente\",\"duplicada\":false,\"accionId\":14,\"mensaje\":\"Propuesta registrada como PENDIENTE de aprobación humana.\"}",
+      "ms": 0,
+      "error": null
+    },
+    {
+      "n": 19,
+      "tMs": 0,
+      "tipo": "llm",
+      "agente": "Agente Ejecutor",
+      "modelo": "mock",
+      "ms": 0,
+      "tokens": {
+        "in": 458,
+        "out": 42
+      },
+      "herramientas_solicitadas": [],
+      "contenido": "{\"resumen\":\"Se registraron 2 propuesta(s) PENDIENTES de aprobación humana.\",\"hallazgos\":[\"Acción #13 pendiente\",\"Acción #14 pendiente\"],\"datos\":{\"propuestas\":[13,14]}}"
+    },
+    {
+      "n": 20,
+      "tMs": 0,
+      "tipo": "mensaje_agente",
+      "de": "Agente Ejecutor",
+      "a": "Coordinador",
+      "contenido": "{\"resumen\":\"Se registraron 2 propuesta(s) PENDIENTES de aprobación humana.\",\"hallazgos\":[\"Acción #13 pendiente\",\"Acción #14 pendiente\"],\"datos\":{\"propuestas\":[13,14]}}"
+    },
+    {
+      "n": 21,
+      "tMs": 0,
+      "tipo": "llm",
+      "agente": "Coordinador",
+      "modelo": "mock",
+      "ms": 0,
+      "tokens": {
+        "in": 1094,
+        "out": 54
+      },
+      "herramientas_solicitadas": [],
+      "contenido": "Se leyeron 4 sensores: Medidor general 6.19 L/min; Cocina 6.63 L/min; Baño principal 0.67 L/min; Riego de jardín 2.45 L/min. Fuga confirmada en: cocina. Se registraron 2 propuesta(s) PENDIENTES de aprobación humana."
+    },
+    {
+      "n": 22,
+      "tMs": 0,
+      "tipo": "respuesta_final",
+      "contenido": "Se leyeron 4 sensores: Medidor general 6.19 L/min; Cocina 6.63 L/min; Baño principal 0.67 L/min; Riego de jardín 2.45 L/min. Fuga confirmada en: cocina. Se registraron 2 propuesta(s) PENDIENTES de aprobación humana."
+    }
+  ]
+}
