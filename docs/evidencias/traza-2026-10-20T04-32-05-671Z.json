@@ -1,0 +1,358 @@
+{
+  "id": "417689e6",
+  "fecha": "2026-10-20T04:33:27.742Z",
+  "mensaje": "¿Hay alguna fuga activa ahora mismo?",
+  "respuesta": "Se ha confirmado una fuga activa en el sensor de cocina. El ejecutor ha propuesto cerrar la válvula y notificar a la EPS; ambas acciones quedan PENDIENTES de aprobación humana.",
+  "agentes": [
+    "Coordinador",
+    "Agente Sensor",
+    "Agente Detección",
+    "Agente Ejecutor"
+  ],
+  "accionesPropuestas": [
+    {
+      "id": 1,
+      "sensorId": "cocina",
+      "sensorNombre": "Cocina",
+      "tipo": "cerrar_valvula",
+      "tipoEtiqueta": "Cerrar válvula de suministro",
+      "prioridad": "alta",
+      "detalle": "Fuga confirmada en sensor cocina",
+      "estado": "pendiente",
+      "creadaPor": "Agente Ejecutor",
+      "trazaId": "417689e6",
+      "fecha": "2026-10-20T04:33:32.055Z",
+      "decididaPor": null,
+      "fechaDecision": null
+    },
+    {
+      "id": 2,
+      "sensorId": "cocina",
+      "sensorNombre": "Cocina",
+      "tipo": "notificar_eps",
+      "tipoEtiqueta": "Notificar a la EPS",
+      "prioridad": "media",
+      "detalle": "Fuga confirmada en sensor cocina",
+      "estado": "pendiente",
+      "creadaPor": "Agente Ejecutor",
+      "trazaId": "417689e6",
+      "fecha": "2026-10-20T04:33:32.292Z",
+      "decididaPor": null,
+      "fechaDecision": null
+    }
+  ],
+  "sospechaInyeccion": [],
+  "abortado": null,
+  "llamadasLlm": 12,
+  "delegaciones": 3,
+  "tokens": {
+    "in": 9022,
+    "out": 1039
+  },
+  "costoUsd": 0.001365,
+  "modo": "groq",
+  "fuenteDatos": "simulador_servidor",
+  "ms": 5170,
+  "eventos": [
+    {
+      "n": 1,
+      "tMs": 5,
+      "tipo": "entrada",
+      "mensaje": "¿Hay alguna fuga activa ahora mismo?",
+      "sesionId": null
+    },
+    {
+      "n": 2,
+      "tMs": 1332,
+      "tipo": "llm",
+      "agente": "Coordinador",
+      "modelo": "openai/gpt-oss-120b",
+      "ms": 1324,
+      "tokens": {
+        "in": 657,
+        "out": 70
+      },
+      "herramientas_solicitadas": [
+        "delegar_a_agente"
+      ],
+      "contenido": null
+    },
+    {
+      "n": 3,
+      "tMs": 1332,
+      "tipo": "delegacion",
+      "de": "Coordinador",
+      "a": "Agente Sensor",
+      "tarea": "Obtener lecturas actuales de caudal y presión de todos los sensores."
+    },
+    {
+      "n": 4,
+      "tMs": 1830,
+      "tipo": "llm",
+      "agente": "Agente Sensor",
+      "modelo": "openai/gpt-oss-20b",
+      "ms": 497,
+      "tokens": {
+        "in": 440,
+        "out": 39
+      },
+      "herramientas_solicitadas": [
+        "consultarLecturas"
+      ],
+      "contenido": null
+    },
+    {
+      "n": 5,
+      "tMs": 1831,
+      "tipo": "herramienta",
+      "agente": "Agente Sensor",
+      "herramienta": "consultarLecturas",
+      "args": "{\"sensorId\":\"todos\"}",
+      "resultado": "{\"fuente\":\"simulador_servidor\",\"sensores\":[{\"sensorId\":\"general\",\"nombre\":\"Medidor general\",\"caudalLMin\":6.17,\"presionBar\":3.17,\"consumoBaseLMin\":6.2,\"presionBaseBar\":3.1,\"valvulaCerrada\":false},{\"sensorId\":\"cocina\",\"nombre\":\"Cocina\",\"caudalLMin\":5.59,\"presionBar\":3.28,\"consumoBaseLMin\":1.1,\"presionBaseBar\":2.4,\"valvulaCerrada\":false},{\"sensorId\":\"bano\",\"nombre\":\"Baño principal\",\"caudalLMin\":0.8,\"presionBar\":2.26,\"consumoBaseLMin\":0.8,\"presionBaseBar\":2.2,\"valvulaCerrada\":false},{\"sensorId\":\"jardin\",\"nombre\":\"Riego de jardín\",\"caudalLMin\":2.55,\"presionBar\":2.74,\"consumoBaseLMin\":2.4,\"presionBaseBar\":2.8,\"valvulaCerrada\":false}]}",
+      "ms": 1,
+      "error": null
+    },
+    {
+      "n": 6,
+      "tMs": 2325,
+      "tipo": "llm",
+      "agente": "Agente Sensor",
+      "modelo": "openai/gpt-oss-20b",
+      "ms": 494,
+      "tokens": {
+        "in": 711,
+        "out": 202
+      },
+      "herramientas_solicitadas": [],
+      "contenido": "{\"resumen\":\"Lecturas actuales de caudal y presión de todos los sensores reportadas.\",\"hallazgos\":[\"Sensor general: caudal 6.17 L/min, presión 3.17 bar\",\"Sensor cocina: caudal 5.59 L/min, presión 3.28 bar\",\"Sensor baño principal: caudal 0.8 L/min, presión 2.26 bar\",\"Sensor riego de jardín: caudal 2.5…[recortado]"
+    },
+    {
+      "n": 7,
+      "tMs": 2326,
+      "tipo": "mensaje_agente",
+      "de": "Agente Sensor",
+      "a": "Coordinador",
+      "contenido": "{\"resumen\":\"Lecturas actuales de caudal y presión de todos los sensores reportadas.\",\"hallazgos\":[\"Sensor general: caudal 6.17 L/min, presión 3.17 bar\",\"Sensor cocina: caudal 5.59 L/min, presión 3.28 bar\",\"Sensor baño principal: caudal 0.8 L/min, presión 2.26 bar\",\"Sensor riego de jardín: caudal 2.55 L/min, presión 2.74 bar\"],\"datos\":{\"general\":{\"caudalLMin\":6.17,\"presionBar\":3.17},\"cocina\":{\"caudalLMin\":5.59,\"presionBar\":3.28},\"bano\":{\"caudalLMin\":0.8,\"presionBar\":2.26},\"jardin\":{\"caudalLMin\":2.55,\"presionBar\":2.74}}}"
+    },
+    {
+      "n": 8,
+      "tMs": 2625,
+      "tipo": "llm",
+      "agente": "Coordinador",
+      "modelo": "openai/gpt-oss-120b",
+      "ms": 299,
+      "tokens": {
+        "in": 909,
+        "out": 48
+      },
+      "herramientas_solicitadas": [
+        "delegar_a_agente"
+      ],
+      "contenido": null
+    },
+    {
+      "n": 9,
+      "tMs": 2625,
+      "tipo": "delegacion",
+      "de": "Coordinador",
+      "a": "Agente Detección",
+      "tarea": "Analizar lecturas para detectar fuga activa en todos los sensores."
+    },
+    {
+      "n": 10,
+      "tMs": 2948,
+      "tipo": "llm",
+      "agente": "Agente Detección",
+      "modelo": "openai/gpt-oss-20b",
+      "ms": 323,
+      "tokens": {
+        "in": 467,
+        "out": 69
+      },
+      "herramientas_solicitadas": [
+        "analizarPatron"
+      ],
+      "contenido": null
+    },
+    {
+      "n": 11,
+      "tMs": 2949,
+      "tipo": "herramienta",
+      "agente": "Agente Detección",
+      "herramienta": "analizarPatron",
+      "args": "{\"sensorId\":\"todos\"}",
+      "resultado": "{\"sensores\":[{\"sensorId\":\"general\",\"patron\":\"normal\",\"desviacionCaudalPct\":-0.5,\"presionAnomala\":false},{\"sensorId\":\"cocina\",\"patron\":\"sobreconsumo\",\"desviacionCaudalPct\":408.2,\"presionAnomala\":true},{\"sensorId\":\"bano\",\"patron\":\"normal\",\"desviacionCaudalPct\":0,\"presionAnomala\":false},{\"sensorId\":\"jardin\",\"patron\":\"normal\",\"desviacionCaudalPct\":6.2,\"presionAnomala\":false}]}",
+      "ms": 1,
+      "error": null
+    },
+    {
+      "n": 12,
+      "tMs": 3238,
+      "tipo": "llm",
+      "agente": "Agente Detección",
+      "modelo": "openai/gpt-oss-20b",
+      "ms": 289,
+      "tokens": {
+        "in": 621,
+        "out": 37
+      },
+      "herramientas_solicitadas": [
+        "calcularRiesgoFuga"
+      ],
+      "contenido": null
+    },
+    {
+      "n": 13,
+      "tMs": 3238,
+      "tipo": "herramienta",
+      "agente": "Agente Detección",
+      "herramienta": "calcularRiesgoFuga",
+      "args": "{\"sensorId\":\"todos\"}",
+      "resultado": "{\"fugas\":[\"cocina\"],\"sensores\":[{\"sensorId\":\"general\",\"nombre\":\"Medidor general\",\"riesgoPct\":0,\"confianzaPct\":0,\"umbralPct\":60,\"fugaConfirmada\":false},{\"sensorId\":\"cocina\",\"nombre\":\"Cocina\",\"riesgoPct\":100,\"confianzaPct\":100,\"umbralPct\":75,\"fugaConfirmada\":true},{\"sensorId\":\"bano\",\"nombre\":\"Baño principal\",\"riesgoPct\":0,\"confianzaPct\":0,\"umbralPct\":65,\"fugaConfirmada\":false},{\"sensorId\":\"jardin\",\"nombre\":\"Riego de jardín\",\"riesgoPct\":6,\"confianzaPct\":6,\"umbralPct\":80,\"fugaConfirmada\":false}]}",
+      "ms": 0,
+      "error": null
+    },
+    {
+      "n": 14,
+      "tMs": 3700,
+      "tipo": "llm",
+      "agente": "Agente Detección",
+      "modelo": "openai/gpt-oss-20b",
+      "ms": 462,
+      "tokens": {
+        "in": 820,
+        "out": 268
+      },
+      "herramientas_solicitadas": [],
+      "contenido": "{\"resumen\":\"Se detectó una fuga confirmada en el sensor de cocina.\",\"hallazgos\":[\"Patrón de consumo sobreconsumo con desviación 408.2% y presión anómala en cocina.\",\"Riesgo de fuga 100% en cocina, superando el umbral del 75% y confirmando la fuga.\",\"Otros sensores presentan riesgo bajo o nulo.\",\"Fug…[recortado]"
+    },
+    {
+      "n": 15,
+      "tMs": 3700,
+      "tipo": "mensaje_agente",
+      "de": "Agente Detección",
+      "a": "Coordinador",
+      "contenido": "{\"resumen\":\"Se detectó una fuga confirmada en el sensor de cocina.\",\"hallazgos\":[\"Patrón de consumo sobreconsumo con desviación 408.2% y presión anómala en cocina.\",\"Riesgo de fuga 100% en cocina, superando el umbral del 75% y confirmando la fuga.\",\"Otros sensores presentan riesgo bajo o nulo.\",\"Fugas confirmadas: cocina.\"],\"datos\":{\"fugas\":[\"cocina\"],\"sensores\":[{\"sensorId\":\"general\",\"nombre\":\"Medidor general\",\"riesgoPct\":0,\"confianzaPct\":0,\"umbralPct\":60,\"fugaConfirmada\":false},{\"sensorId\":\"cocina\",\"nombre\":\"Cocina\",\"riesgoPct\":100,\"confianzaPct\":100,\"umbralPct\":75,\"fugaConfirmada\":true},{\"sensorId\":\"bano\",\"nombre\":\"Baño principal\",\"riesgoPct\":0,\"confianzaPct\":0,\"umbralPct\":65,\"fugaConfirmada\":false},{\"sensorId\":\"jardin\",\"nombre\":\"Riego de jardín\",\"riesgoPct\":6,\"confianzaPct\":6,\"umbralPct\":80,\"fugaConfirmada\":false}]}}"
+    },
+    {
+      "n": 16,
+      "tMs": 4039,
+      "tipo": "llm",
+      "agente": "Coordinador",
+      "modelo": "openai/gpt-oss-120b",
+      "ms": 339,
+      "tokens": {
+        "in": 1228,
+        "out": 56
+      },
+      "herramientas_solicitadas": [
+        "delegar_a_agente"
+      ],
+      "contenido": null
+    },
+    {
+      "n": 17,
+      "tMs": 4039,
+      "tipo": "delegacion",
+      "de": "Coordinador",
+      "a": "Agente Ejecutor",
+      "tarea": "Proponer acciones para la fuga confirmada en sensorId=cocina."
+    },
+    {
+      "n": 18,
+      "tMs": 4313,
+      "tipo": "llm",
+      "agente": "Agente Ejecutor",
+      "modelo": "openai/gpt-oss-20b",
+      "ms": 274,
+      "tokens": {
+        "in": 516,
+        "out": 78
+      },
+      "herramientas_solicitadas": [
+        "proponerAccion"
+      ],
+      "contenido": null
+    },
+    {
+      "n": 19,
+      "tMs": 4314,
+      "tipo": "herramienta",
+      "agente": "Agente Ejecutor",
+      "herramienta": "proponerAccion",
+      "args": "{\"detalle\":\"Fuga confirmada en sensor cocina\",\"prioridad\":\"alta\",\"sensorId\":\"cocina\",\"tipo\":\"cerrar_valvula\"}",
+      "resultado": "{\"ok\":true,\"estado\":\"pendiente\",\"duplicada\":false,\"accionId\":1,\"mensaje\":\"Propuesta registrada como PENDIENTE de aprobación humana.\"}",
+      "ms": 1,
+      "error": null
+    },
+    {
+      "n": 20,
+      "tMs": 4550,
+      "tipo": "llm",
+      "agente": "Agente Ejecutor",
+      "modelo": "openai/gpt-oss-20b",
+      "ms": 236,
+      "tokens": {
+        "in": 605,
+        "out": 53
+      },
+      "herramientas_solicitadas": [
+        "proponerAccion"
+      ],
+      "contenido": null
+    },
+    {
+      "n": 21,
+      "tMs": 4551,
+      "tipo": "herramienta",
+      "agente": "Agente Ejecutor",
+      "herramienta": "proponerAccion",
+      "args": "{\"detalle\":\"Fuga confirmada en sensor cocina\",\"prioridad\":\"media\",\"sensorId\":\"cocina\",\"tipo\":\"notificar_eps\"}",
+      "resultado": "{\"ok\":true,\"estado\":\"pendiente\",\"duplicada\":false,\"accionId\":2,\"mensaje\":\"Propuesta registrada como PENDIENTE de aprobación humana.\"}",
+      "ms": 1,
+      "error": null
+    },
+    {
+      "n": 22,
+      "tMs": 4759,
+      "tipo": "llm",
+      "agente": "Agente Ejecutor",
+      "modelo": "openai/gpt-oss-20b",
+      "ms": 208,
+      "tokens": {
+        "in": 693,
+        "out": 75
+      },
+      "herramientas_solicitadas": [],
+      "contenido": "{\"resumen\":\"Se registraron dos propuestas pendientes para la fuga confirmada en el sensor cocina.\",\"hallazgos\":[\"Propuesta de cerrar válvula (id 1) registrada como pendiente.\",\"Propuesta de notificar EPS (id 2) registrada como pendiente.\"],\"datos\":{}}"
+    },
+    {
+      "n": 23,
+      "tMs": 4759,
+      "tipo": "mensaje_agente",
+      "de": "Agente Ejecutor",
+      "a": "Coordinador",
+      "contenido": "{\"resumen\":\"Se registraron dos propuestas pendientes para la fuga confirmada en el sensor cocina.\",\"hallazgos\":[\"Propuesta de cerrar válvula (id 1) registrada como pendiente.\",\"Propuesta de notificar EPS (id 2) registrada como pendiente.\"],\"datos\":{}}"
+    },
+    {
+      "n": 24,
+      "tMs": 5169,
+      "tipo": "llm",
+      "agente": "Coordinador",
+      "modelo": "openai/gpt-oss-120b",
+      "ms": 409,
+      "tokens": {
+        "in": 1355,
+        "out": 44
+      },
+      "herramientas_solicitadas": [],
+      "contenido": "Se ha confirmado una fuga activa en el sensor de cocina. El ejecutor ha propuesto cerrar la válvula y notificar a la EPS; ambas acciones quedan PENDIENTES de aprobación humana."
+    },
+    {
+      "n": 25,
+      "tMs": 5170,
+      "tipo": "respuesta_final",
+      "contenido": "Se ha confirmado una fuga activa en el sensor de cocina. El ejecutor ha propuesto cerrar la válvula y notificar a la EPS; ambas acciones quedan PENDIENTES de aprobación humana."
+    }
+  ]
+}
